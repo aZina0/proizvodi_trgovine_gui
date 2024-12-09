@@ -12,6 +12,6 @@ QGroupBox::title {
 }
 
 QPushButton {
-	font-size: 15pt;
+	font-size: 13pt;
 	height: 30;
 }
