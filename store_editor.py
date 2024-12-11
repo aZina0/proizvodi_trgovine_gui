@@ -2,12 +2,12 @@ from PySide6.QtWidgets import *
 from PySide6.QtCore import Signal
 import sys
 import os.path
-import initialize_database
+import database_interaction
 
 
 # Ako ne postoji baza podataka, napravi novu s nekim pocetnim podatcima
 if not os.path.exists("database.db"):
-	initialize_database.initialize()
+	database_interaction.initialize()
 
 
 
