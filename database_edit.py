@@ -62,21 +62,22 @@ class CustomScrollList(QScrollArea):
 		self.setWidget(self.base_widget)
 		self.setWidgetResizable(True)
 
-		self.items = {}
+		self.buttons = {}
 
 		self.selected_item = None
 
 
-	def add_item(self, text):
-		self.items[text] = QPushButton(text)
-		self.items[text].setCheckable(True)
-		self.items[text].clicked.connect(lambda: self.item_clicked(text))
-		self.base_layout.addWidget(self.items[text], len(self.items) - 1, 0)
+	def create_button(self, text):
+		self.buttons[text] = QPushButton(text)
+		self.buttons[text].setCheckable(True)
+		self.buttons[text].clicked.connect(lambda: self.button_clicked(text))
+		self.base_layout.addWidget(self.buttons[text], len(self.buttons) - 1, 0)
+		return self.buttons[text]
 
-	def item_clicked(self, clicked_item_text):
-		for item_text in self.items:
-			if item_text != clicked_item_text:
-				self.items[item_text].setChecked(False)
+	def button_clicked(self, clicked_button_text):
+		for button_text in self.buttons:
+			if button_text != clicked_button_text:
+				self.buttons[button_text].setChecked(False)
 
 
 
@@ -179,20 +180,20 @@ class CategoryEditWidget(QWidget):
 
 		self.list = CustomScrollList(self.list_widget)
 		self.list_layout.addWidget(self.list)
-		self.list.add_item("Odjeca1")
-		self.list.add_item("Odjeca2")
-		self.list.add_item("Odjeca3")
-		self.list.add_item("Odjeca4")
-		self.list.add_item("Odjeca5")
-		self.list.add_item("Odjeca6")
-		self.list.add_item("Odjeca7")
-		self.list.add_item("Odjeca8")
-		self.list.add_item("Odjeca9")
-		self.list.add_item("Odjeca10")
-		self.list.add_item("Odjeca11")
-		self.list.add_item("Odjeca12")
-		self.list.add_item("Odjeca13")
-		self.list.add_item("Odjeca14")
+		self.list.create_button("Odjeca1")
+		self.list.create_button("Odjeca2")
+		self.list.create_button("Odjeca3")
+		self.list.create_button("Odjeca4")
+		self.list.create_button("Odjeca5")
+		self.list.create_button("Odjeca6")
+		self.list.create_button("Odjeca7")
+		self.list.create_button("Odjeca8")
+		self.list.create_button("Odjeca9")
+		self.list.create_button("Odjeca10")
+		self.list.create_button("Odjeca11")
+		self.list.create_button("Odjeca12")
+		self.list.create_button("Odjeca13")
+		self.list.create_button("Odjeca14")
 
 		self.add_widget = QGroupBox("Dodaj kategoriju", self)
 		self.add_layout = QVBoxLayout(self.add_widget)
