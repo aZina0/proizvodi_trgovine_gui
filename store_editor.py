@@ -18,9 +18,13 @@ app.setStyleSheet(
 	"""
 	QGroupBox {
 		font: bold;
-		border: 1px solid rgb(53, 53, 53);
+		border: 1px solid #353535;
 		border-radius: 6px;
 		margin-top: 6px;
+	}
+
+	QGroupBox::disabled {
+		border: 1px solid #262626;
 	}
 
 	QGroupBox::title {
@@ -29,8 +33,16 @@ app.setStyleSheet(
 		padding: 0px 5px 0px 5px;
 	}
 
+	QGroupBox::title::disabled {
+		color: #494949;
+	}
+
 	QLineEdit {
 		font-size: 11pt;
+	}
+
+	QLineEdit::disabled {
+		color: #494949;
 	}
 	"""
 )
@@ -57,10 +69,10 @@ class CustomScrollList(QScrollArea):
 		""")
 
 		self.base_widget = QWidget(self)
-		self.base_layout = QVBoxLayout(self.base_widget)
-		self.base_layout.setContentsMargins(0, 0, 0, 0)
-		self.base_layout.setSpacing(0)
-		self.base_layout.setSizeConstraint(QLayout.SetMaximumSize)
+		self.base_widget.setLayout(QVBoxLayout())
+		self.base_widget.layout().setContentsMargins(0, 0, 0, 0)
+		self.base_widget.layout().setSpacing(0)
+		self.base_widget.layout().setSizeConstraint(QLayout.SetMaximumSize)
 		self.setWidget(self.base_widget)
 		self.setWidgetResizable(True)
 
@@ -81,7 +93,7 @@ class CustomScrollList(QScrollArea):
 		button.setCheckable(True)
 		button.setProperty("name", text)
 		button.clicked.connect(self.button_clicked)
-		self.base_layout.addWidget(button)
+		self.base_widget.layout().addWidget(button)
 		self.buttons[text] = button
 
 		return self.buttons[text]
@@ -97,7 +109,7 @@ class CustomScrollList(QScrollArea):
 	def delete_button(self, text):
 		button = self.buttons.pop(text)
 		button.clicked.disconnect()
-		self.base_layout.removeWidget(button)
+		self.base_widget.layout().removeWidget(button)
 		button.deleteLater()
 
 
@@ -111,12 +123,13 @@ class Window(QMainWindow):
 		self.setMinimumSize(794, 400)
 		self.setWindowTitle("Uređivač proizvoda i njihovih svojstava")
 
-		self.main_widget = QWidget(self)
-		self.setCentralWidget(self.main_widget)
-		self.base_layout = QGridLayout(self.main_widget)
-		self.base_layout.setContentsMargins(0, 0, 0, 0)
-		self.base_layout.setRowStretch(1, 1)
-		self.base_layout.setColumnStretch(0, 1)
+		self.base_widget = QWidget(self)
+		self.base_widget.setLayout(QGridLayout())
+		self.base_widget.layout().setContentsMargins(0, 0, 0, 0)
+		self.base_widget.layout().setRowStretch(1, 1)
+		self.base_widget.layout().setColumnStretch(0, 1)
+		self.setCentralWidget(self.base_widget)
+
 
 
 
@@ -139,29 +152,31 @@ class ModeBar(QWidget):
 			}
 		""")
 
-		self.base_layout = QGridLayout(self)
-		self.base_layout.setContentsMargins(0, 0, 0, 0)
-		self.base_layout.setSpacing(0)
 
 		self.category_edit_button = QPushButton("Dodaj/uredi kategorije")
 		self.category_edit_button.setCheckable(True)
 		self.category_edit_button.clicked.connect(self.category_edit_clicked)
-		self.base_layout.addWidget(self.category_edit_button, 0, 0)
 
 		self.property_edit_button = QPushButton("Dodaj/uredi grupe svojstava")
 		self.property_edit_button.setCheckable(True)
 		self.property_edit_button.clicked.connect(self.property_edit_clicked)
-		self.base_layout.addWidget(self.property_edit_button, 0, 1)
 
 		self.descriptor_edit_button = QPushButton("Dodaj/uredi svojstva")
 		self.descriptor_edit_button.setCheckable(True)
 		self.descriptor_edit_button.clicked.connect(self.descriptor_edit_clicked)
-		self.base_layout.addWidget(self.descriptor_edit_button, 0, 2)
 
 		self.item_edit_button = QPushButton("Dodaj/uredi proizvode")
 		self.item_edit_button.setCheckable(True)
 		self.item_edit_button.clicked.connect(self.item_edit_clicked)
-		self.base_layout.addWidget(self.item_edit_button, 0, 3)
+
+
+		self.setLayout(QGridLayout())
+		self.layout().setContentsMargins(0, 0, 0, 0)
+		self.layout().setSpacing(0)
+		self.layout().addWidget(self.category_edit_button, 0, 0)
+		self.layout().addWidget(self.property_edit_button, 0, 1)
+		self.layout().addWidget(self.descriptor_edit_button, 0, 2)
+		self.layout().addWidget(self.item_edit_button, 0, 3)
 
 
 	def category_edit_clicked(self):
@@ -186,6 +201,7 @@ class ModeBar(QWidget):
 
 
 
+
 class CategoryEditWidget(QWidget):
 	def __init__(self, parent):
 		super().__init__(parent)
@@ -201,32 +217,22 @@ class CategoryEditWidget(QWidget):
 		)
 
 
+		self.list_group = QGroupBox("Kategorije")
+		self.list_group.setLayout(QVBoxLayout())
 
-		self.base_layout = QGridLayout(self)
-		self.base_layout.setRowStretch(0, 2)
-		self.base_layout.setRowStretch(1, 2)
-		self.base_layout.setRowStretch(2, 1)
-		self.base_layout.setColumnStretch(0, 1)
-		self.base_layout.setColumnStretch(1, 1)
-
-		self.list_widget = QGroupBox("Kategorije", self)
-		self.list_layout = QVBoxLayout(self.list_widget)
-		self.base_layout.addWidget(self.list_widget, 0, 0, 3, 1)
-
-		self.list = CustomScrollList(self.list_widget)
-		self.list_layout.addWidget(self.list)
+		self.list_widget = CustomScrollList(self.list_group)
 		for category in database_interaction.get_categories():
-			button = self.list.create_button(category)
+			button = self.list_widget.create_button(category)
 			button.clicked.connect(self.category_clicked)
+		self.list_group.layout().addWidget(self.list_widget)
 
 
-		self.add_widget = QGroupBox("Dodaj kategoriju", self)
-		self.add_layout = QVBoxLayout(self.add_widget)
-		self.base_layout.addWidget(self.add_widget, 0, 1)
+		self.add_group = QGroupBox("Dodaj kategoriju")
+		self.add_group.setLayout(QVBoxLayout())
 
 		self.add_text = QLineEdit()
 		self.add_text.setPlaceholderText("naziv nove kategorije")
-		self.add_layout.addWidget(self.add_text)
+		self.add_group.layout().addWidget(self.add_text)
 
 		self.add_button = QPushButton("Dodaj")
 		self.add_button.setStyleSheet(
@@ -237,16 +243,15 @@ class CategoryEditWidget(QWidget):
 			"""
 		)
 		self.add_button.clicked.connect(self.add_button_clicked)
-		self.add_layout.addWidget(self.add_button)
+		self.add_group.layout().addWidget(self.add_button)
 
 
-		self.rename_widget = QGroupBox("Preimenuj kategoriju", self)
-		self.rename_layout = QVBoxLayout(self.rename_widget)
-		self.base_layout.addWidget(self.rename_widget, 1, 1)
+		self.rename_group = QGroupBox("Preimenuj kategoriju")
+		self.rename_group.setLayout(QVBoxLayout())
 
 		self.rename_text = QLineEdit()
 		self.rename_text.setPlaceholderText("novi naziv kategorije")
-		self.rename_layout.addWidget(self.rename_text)
+		self.rename_group.layout().addWidget(self.rename_text)
 
 		self.rename_button = QPushButton("Preimenuj")
 		self.rename_button.setStyleSheet(
@@ -262,12 +267,11 @@ class CategoryEditWidget(QWidget):
 			"""
 		)
 		self.rename_button.clicked.connect(self.rename_button_clicked)
-		self.rename_layout.addWidget(self.rename_button)
+		self.rename_group.layout().addWidget(self.rename_button)
 
 
-		self.remove_widget = QGroupBox("Izbriši kategoriju", self)
-		self.remove_layout = QVBoxLayout(self.remove_widget)
-		self.base_layout.addWidget(self.remove_widget, 2, 1)
+		self.remove_group = QGroupBox("Izbriši kategoriju")
+		self.remove_group.setLayout(QVBoxLayout())
 
 		self.remove_button = QPushButton("Izbriši")
 		self.remove_button.setStyleSheet(
@@ -283,10 +287,24 @@ class CategoryEditWidget(QWidget):
 			"""
 		)
 		self.remove_button.clicked.connect(self.remove_button_clicked)
-		self.remove_layout.addWidget(self.remove_button)
+		self.remove_group.layout().addWidget(self.remove_button)
 
-		self.rename_widget.setDisabled(True)
-		self.remove_widget.setDisabled(True)
+
+		layout = QGridLayout(self)
+		layout.setRowStretch(0, 2)
+		layout.setRowStretch(1, 2)
+		layout.setRowStretch(2, 1)
+		layout.setColumnStretch(0, 1)
+		layout.setColumnStretch(1, 1)
+		layout.addWidget(self.list_group, 0, 0, 3, 1)
+		layout.addWidget(self.add_group, 0, 1)
+		layout.addWidget(self.rename_group, 1, 1)
+		layout.addWidget(self.remove_group, 2, 1)
+		self.setLayout(layout)
+
+
+		self.rename_group.setDisabled(True)
+		self.remove_group.setDisabled(True)
 		self.selected_category = ""
 
 
@@ -295,23 +313,26 @@ class CategoryEditWidget(QWidget):
 
 		if self.selected_category == "" or self.selected_category != category:
 			self.selected_category = category
-			self.rename_widget.setDisabled(False)
-			self.remove_widget.setDisabled(False)
+			self.rename_group.setDisabled(False)
+			self.remove_group.setDisabled(False)
 		elif self.selected_category == category:
 			self.selected_category = ""
-			self.rename_widget.setDisabled(True)
-			self.remove_widget.setDisabled(True)
+			self.rename_group.setDisabled(True)
+			self.remove_group.setDisabled(True)
 
 
 	def add_button_clicked(self):
 		new_category_name = self.add_text.text()
+
+		if new_category_name == "":
+			return
 
 		if database_interaction.category_exists(new_category_name):
 			return
 
 		database_interaction.add_category(new_category_name)
 
-		button = self.list.create_button(new_category_name)
+		button = self.list_widget.create_button(new_category_name)
 		button.clicked.connect(self.category_clicked)
 
 
@@ -324,7 +345,7 @@ class CategoryEditWidget(QWidget):
 
 		database_interaction.rename_category(current_category_name, new_category_name)
 
-		self.list.rename_button(current_category_name, new_category_name)
+		self.list_widget.rename_button(current_category_name, new_category_name)
 		self.selected_category = new_category_name
 
 
@@ -335,10 +356,10 @@ class CategoryEditWidget(QWidget):
 			return
 
 		database_interaction.remove_category(category_name)
-		self.list.delete_button(category_name)
+		self.list_widget.delete_button(category_name)
 
-		self.rename_widget.setDisabled(True)
-		self.remove_widget.setDisabled(True)
+		self.rename_group.setDisabled(True)
+		self.remove_group.setDisabled(True)
 
 
 
@@ -346,8 +367,8 @@ window = Window()
 mode_bar = ModeBar(window)
 category_edit_widget = CategoryEditWidget(window)
 
-window.base_layout.addWidget(mode_bar, 0, 0)
-window.base_layout.addWidget(category_edit_widget, 1, 0)
+window.base_widget.layout().addWidget(mode_bar, 0, 0)
+window.base_widget.layout().addWidget(category_edit_widget, 1, 0)
 window.show()
 
 app.exec()
