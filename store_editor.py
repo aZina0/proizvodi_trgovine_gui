@@ -1,10 +1,11 @@
 from PySide6.QtWidgets import *
 from PySide6.QtCore import Signal
 import sys
-import os.path
+import os
 import database_interaction
 
 
+# os.remove("database.db")
 # Ako ne postoji baza podataka, napravi novu s nekim pocetnim podatcima
 if not os.path.exists("database.db"):
 	database_interaction.initialize()
@@ -56,31 +57,48 @@ class CustomScrollList(QScrollArea):
 		""")
 
 		self.base_widget = QWidget(self)
-		self.base_layout = QGridLayout(self.base_widget)
+		self.base_layout = QVBoxLayout(self.base_widget)
 		self.base_layout.setContentsMargins(0, 0, 0, 0)
 		self.base_layout.setSpacing(0)
+		self.base_layout.setSizeConstraint(QLayout.SetMaximumSize)
 		self.setWidget(self.base_widget)
 		self.setWidgetResizable(True)
 
 		self.buttons = {}
 
-		self.selected_item = None
-
-
-	def create_button(self, text):
-		self.buttons[text] = QPushButton(text.capitalize())
-		self.buttons[text].setCheckable(True)
-		self.buttons[text].setProperty("name", text)
-		self.buttons[text].clicked.connect(self.button_clicked)
-		self.base_layout.addWidget(self.buttons[text], len(self.buttons) - 1, 0)
-		self.base_widget.setFixedHeight(self.base_widget.sizeHint().height())
-		return self.buttons[text]
 
 	def button_clicked(self):
 		clicked_button_text = self.sender().property("name")
 		for button_text in self.buttons:
 			if button_text != clicked_button_text:
 				self.buttons[button_text].setChecked(False)
+
+
+	def create_button(self, text):
+		text = text.lower()
+
+		button = QPushButton(text.capitalize())
+		button.setCheckable(True)
+		button.setProperty("name", text)
+		button.clicked.connect(self.button_clicked)
+		self.base_layout.addWidget(button)
+		self.buttons[text] = button
+
+		return self.buttons[text]
+
+
+	def rename_button(self, current_text, new_text):
+		button = self.buttons.pop(current_text)
+		button.setProperty("name", new_text)
+		button.setText(new_text.capitalize())
+		self.buttons[new_text] = button
+
+
+	def delete_button(self, text):
+		button = self.buttons.pop(text)
+		button.clicked.disconnect()
+		self.base_layout.removeWidget(button)
+		button.deleteLater()
 
 
 
@@ -267,7 +285,8 @@ class CategoryEditWidget(QWidget):
 		self.remove_button.clicked.connect(self.remove_button_clicked)
 		self.remove_layout.addWidget(self.remove_button)
 
-
+		self.rename_widget.setDisabled(True)
+		self.remove_widget.setDisabled(True)
 		self.selected_category = ""
 
 
@@ -285,14 +304,41 @@ class CategoryEditWidget(QWidget):
 
 
 	def add_button_clicked(self):
-		pass
+		new_category_name = self.add_text.text()
+
+		if database_interaction.category_exists(new_category_name):
+			return
+
+		database_interaction.add_category(new_category_name)
+
+		button = self.list.create_button(new_category_name)
+		button.clicked.connect(self.category_clicked)
+
 
 	def rename_button_clicked(self):
-		pass
+		current_category_name = self.selected_category
+		new_category_name = self.rename_text.text()
+
+		if database_interaction.category_exists(new_category_name):
+			return
+
+		database_interaction.rename_category(current_category_name, new_category_name)
+
+		self.list.rename_button(current_category_name, new_category_name)
+		self.selected_category = new_category_name
+
 
 	def remove_button_clicked(self):
-		pass
+		category_name = self.selected_category
 
+		if not database_interaction.category_exists(category_name):
+			return
+
+		database_interaction.remove_category(category_name)
+		self.list.delete_button(category_name)
+
+		self.rename_widget.setDisabled(True)
+		self.remove_widget.setDisabled(True)
 
 
 
