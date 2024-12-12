@@ -14,25 +14,24 @@ if not os.path.exists("database.db"):
 app = QApplication(sys.argv)
 app.setStyle("Fusion")
 app.setStyleSheet(
-"""
-QGroupBox {
-	font: bold;
-	border: 1px solid rgb(53, 53, 53);
-	border-radius: 6px;
-	margin-top: 6px;
-}
+	"""
+	QGroupBox {
+		font: bold;
+		border: 1px solid rgb(53, 53, 53);
+		border-radius: 6px;
+		margin-top: 6px;
+	}
 
-QGroupBox::title {
-	subcontrol-origin: margin;
-	left: 7px;
-	padding: 0px 5px 0px 5px;
-}
+	QGroupBox::title {
+		subcontrol-origin: margin;
+		left: 7px;
+		padding: 0px 5px 0px 5px;
+	}
 
-QPushButton {
-	font-size: 13pt;
-	height: 30;
-}
-"""
+	QLineEdit {
+		font-size: 11pt;
+	}
+	"""
 )
 
 
@@ -48,6 +47,7 @@ class CustomScrollList(QScrollArea):
 				padding: 0px 10px;
 				font-size: 10pt;
 				text-align: left;
+				margin-left: 0;
 			}
 
 			QPushButton::checked {
@@ -68,13 +68,16 @@ class CustomScrollList(QScrollArea):
 
 
 	def create_button(self, text):
-		self.buttons[text] = QPushButton(text)
+		self.buttons[text] = QPushButton(text.capitalize())
 		self.buttons[text].setCheckable(True)
-		self.buttons[text].clicked.connect(lambda: self.button_clicked(text))
+		self.buttons[text].setProperty("name", text)
+		self.buttons[text].clicked.connect(self.button_clicked)
 		self.base_layout.addWidget(self.buttons[text], len(self.buttons) - 1, 0)
+		self.base_widget.setFixedHeight(self.base_widget.sizeHint().height())
 		return self.buttons[text]
 
-	def button_clicked(self, clicked_button_text):
+	def button_clicked(self):
+		clicked_button_text = self.sender().property("name")
 		for button_text in self.buttons:
 			if button_text != clicked_button_text:
 				self.buttons[button_text].setChecked(False)
@@ -105,14 +108,16 @@ class ModeBar(QWidget):
 
 		self.setStyleSheet("""
 			QPushButton {
+				font-size: 13pt;
+				height: 30;
 				background-color: #000000;
 				border: 1px solid #878787;
-				padding: 0px 10px
+				padding: 0px 10px;
 			}
 
 			QPushButton::checked {
 				background-color: #1E1E1E;
-				border-bottom: 0px
+				border-bottom: 0px;
 			}
 		""")
 
@@ -166,6 +171,19 @@ class ModeBar(QWidget):
 class CategoryEditWidget(QWidget):
 	def __init__(self, parent):
 		super().__init__(parent)
+
+		self.setStyleSheet(
+			"""
+			QPushButton {
+				font-size: 13pt;
+				height: 30;
+				margin-left: 150;
+			}
+			"""
+		)
+
+
+
 		self.base_layout = QGridLayout(self)
 		self.base_layout.setRowStretch(0, 2)
 		self.base_layout.setRowStretch(1, 2)
@@ -173,38 +191,34 @@ class CategoryEditWidget(QWidget):
 		self.base_layout.setColumnStretch(0, 1)
 		self.base_layout.setColumnStretch(1, 1)
 
-
-		self.list_widget = QGroupBox("Lista kategorija", self)
+		self.list_widget = QGroupBox("Kategorije", self)
 		self.list_layout = QVBoxLayout(self.list_widget)
 		self.base_layout.addWidget(self.list_widget, 0, 0, 3, 1)
 
 		self.list = CustomScrollList(self.list_widget)
 		self.list_layout.addWidget(self.list)
-		self.list.create_button("Odjeca1")
-		self.list.create_button("Odjeca2")
-		self.list.create_button("Odjeca3")
-		self.list.create_button("Odjeca4")
-		self.list.create_button("Odjeca5")
-		self.list.create_button("Odjeca6")
-		self.list.create_button("Odjeca7")
-		self.list.create_button("Odjeca8")
-		self.list.create_button("Odjeca9")
-		self.list.create_button("Odjeca10")
-		self.list.create_button("Odjeca11")
-		self.list.create_button("Odjeca12")
-		self.list.create_button("Odjeca13")
-		self.list.create_button("Odjeca14")
+		for category in database_interaction.get_categories():
+			button = self.list.create_button(category)
+			button.clicked.connect(self.category_clicked)
+
 
 		self.add_widget = QGroupBox("Dodaj kategoriju", self)
 		self.add_layout = QVBoxLayout(self.add_widget)
 		self.base_layout.addWidget(self.add_widget, 0, 1)
 
 		self.add_text = QLineEdit()
-		self.add_text.setPlaceholderText("naziv kategorije")
+		self.add_text.setPlaceholderText("naziv nove kategorije")
 		self.add_layout.addWidget(self.add_text)
 
 		self.add_button = QPushButton("Dodaj")
-		self.add_button.setStyleSheet("background-color: darkgreen; margin-left: 150")
+		self.add_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #008900;
+			}
+			"""
+		)
+		self.add_button.clicked.connect(self.add_button_clicked)
 		self.add_layout.addWidget(self.add_button)
 
 
@@ -213,11 +227,23 @@ class CategoryEditWidget(QWidget):
 		self.base_layout.addWidget(self.rename_widget, 1, 1)
 
 		self.rename_text = QLineEdit()
-		self.rename_text.setPlaceholderText("naziv kategorije")
+		self.rename_text.setPlaceholderText("novi naziv kategorije")
 		self.rename_layout.addWidget(self.rename_text)
 
 		self.rename_button = QPushButton("Preimenuj")
-		self.rename_button.setStyleSheet("margin-left: 150")
+		self.rename_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #666666;
+			}
+
+			QPushButton::disabled {
+				background-color: #474747;
+				color: #727272;
+			}
+			"""
+		)
+		self.rename_button.clicked.connect(self.rename_button_clicked)
 		self.rename_layout.addWidget(self.rename_button)
 
 
@@ -226,9 +252,46 @@ class CategoryEditWidget(QWidget):
 		self.base_layout.addWidget(self.remove_widget, 2, 1)
 
 		self.remove_button = QPushButton("Izbriši")
-		self.remove_button.setStyleSheet("background-color: darkred; margin-left: 150")
+		self.remove_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #890000;
+			}
+
+			QPushButton::disabled {
+				background-color: #560000;
+				color: #895959;
+			}
+			"""
+		)
+		self.remove_button.clicked.connect(self.remove_button_clicked)
 		self.remove_layout.addWidget(self.remove_button)
 
+
+		self.selected_category = ""
+
+
+	def category_clicked(self):
+		category = self.sender().property("name")
+
+		if self.selected_category == "" or self.selected_category != category:
+			self.selected_category = category
+			self.rename_widget.setDisabled(False)
+			self.remove_widget.setDisabled(False)
+		elif self.selected_category == category:
+			self.selected_category = ""
+			self.rename_widget.setDisabled(True)
+			self.remove_widget.setDisabled(True)
+
+
+	def add_button_clicked(self):
+		pass
+
+	def rename_button_clicked(self):
+		pass
+
+	def remove_button_clicked(self):
+		pass
 
 
 

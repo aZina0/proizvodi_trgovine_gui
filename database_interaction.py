@@ -93,3 +93,18 @@ def initialize():
 		cursor.execute(query)
 
 		conn.commit()
+
+
+def get_categories():
+	categories = []
+
+	with sqlite3.connect("database.db") as conn:
+		cursor = conn.cursor()
+
+		query = """SELECT category.name FROM CATEGORIES AS category;"""
+		cursor.execute(query)
+		categories = [i[0] for i in cursor.fetchall()]
+
+		conn.commit()
+
+	return categories
