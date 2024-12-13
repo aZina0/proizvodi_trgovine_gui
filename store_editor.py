@@ -120,6 +120,7 @@ class CustomScrollList(QScrollArea):
 
 
 
+
 class Window(QMainWindow):
 
 	def __init__(self):
@@ -134,6 +135,7 @@ class Window(QMainWindow):
 		self.base_widget.layout().setColumnStretch(0, 1)
 		self.setCentralWidget(self.base_widget)
 
+		self.show()
 
 
 
@@ -156,53 +158,53 @@ class ModeBar(QWidget):
 			}
 		""")
 
+		self.selected_key = ""
 
-		self.category_edit_button = QPushButton("Dodaj/uredi kategorije")
-		self.category_edit_button.setCheckable(True)
-		self.category_edit_button.clicked.connect(self.category_edit_clicked)
+		self.buttons = {
+			"category_edit": QPushButton("Dodaj/uredi kategorije"),
+			"property_edit": QPushButton("Dodaj/uredi grupe svojstava"),
+			"descriptor_edit": QPushButton("Dodaj/uredi svojstva"),
+			"item_edit": QPushButton("Dodaj/uredi proizvode"),
+		}
 
-		self.property_edit_button = QPushButton("Dodaj/uredi grupe svojstava")
-		self.property_edit_button.setCheckable(True)
-		self.property_edit_button.clicked.connect(self.property_edit_clicked)
+		for key in self.buttons:
+			self.buttons[key].setCheckable(True)
+			self.buttons[key].setProperty("key", key)
+			self.buttons[key].clicked.connect(self.button_clicked)
 
-		self.descriptor_edit_button = QPushButton("Dodaj/uredi svojstva")
-		self.descriptor_edit_button.setCheckable(True)
-		self.descriptor_edit_button.clicked.connect(self.descriptor_edit_clicked)
-
-		self.item_edit_button = QPushButton("Dodaj/uredi proizvode")
-		self.item_edit_button.setCheckable(True)
-		self.item_edit_button.clicked.connect(self.item_edit_clicked)
+		self.linked_widgets = {
+			"category_edit": category_edit_widget,
+			"property_edit": property_edit_widget,
+			"descriptor_edit": descriptor_edit_widget,
+			"item_edit": item_edit_widget,
+		}
 
 
 		self.setLayout(QGridLayout())
 		self.layout().setContentsMargins(0, 0, 0, 0)
 		self.layout().setSpacing(0)
-		self.layout().addWidget(self.category_edit_button, 0, 0)
-		self.layout().addWidget(self.property_edit_button, 0, 1)
-		self.layout().addWidget(self.descriptor_edit_button, 0, 2)
-		self.layout().addWidget(self.item_edit_button, 0, 3)
+		self.layout().addWidget(self.buttons["category_edit"], 0, 0)
+		self.layout().addWidget(self.buttons["property_edit"], 0, 1)
+		self.layout().addWidget(self.buttons["descriptor_edit"], 0, 2)
+		self.layout().addWidget(self.buttons["item_edit"], 0, 3)
 
 
-	def category_edit_clicked(self):
-		self.property_edit_button.setChecked(False)
-		self.descriptor_edit_button.setChecked(False)
-		self.item_edit_button.setChecked(False)
+	def button_clicked(self):
+		clicked_button_key = self.sender().property("key")
 
-	def property_edit_clicked(self):
-		self.category_edit_button.setChecked(False)
-		self.descriptor_edit_button.setChecked(False)
-		self.item_edit_button.setChecked(False)
+		if self.selected_key == "":
+			self.selected_key = clicked_button_key
+			self.linked_widgets[clicked_button_key].open()
 
-	def descriptor_edit_clicked(self):
-		self.category_edit_button.setChecked(False)
-		self.property_edit_button.setChecked(False)
-		self.item_edit_button.setChecked(False)
+		elif clicked_button_key == self.selected_key:
+			self.linked_widgets[self.selected_key].close()
+			self.selected_key = ""
 
-	def item_edit_clicked(self):
-		self.category_edit_button.setChecked(False)
-		self.property_edit_button.setChecked(False)
-		self.descriptor_edit_button.setChecked(False)
-
+		elif clicked_button_key != self.selected_key:
+			self.linked_widgets[self.selected_key].close()
+			self.buttons[self.selected_key].setChecked(False)
+			self.linked_widgets[clicked_button_key].open()
+			self.selected_key = clicked_button_key
 
 
 
@@ -225,9 +227,6 @@ class CategoryEditWidget(QWidget):
 		self.list_group.setLayout(QVBoxLayout())
 
 		self.list_widget = CustomScrollList(self.list_group)
-		for category in database_interaction.get_categories():
-			button = self.list_widget.create_button(category)
-			button.clicked.connect(self.category_clicked)
 		self.list_group.layout().addWidget(self.list_widget)
 
 
@@ -306,7 +305,23 @@ class CategoryEditWidget(QWidget):
 		layout.addWidget(self.remove_group, 2, 1)
 		self.setLayout(layout)
 
+		self.selected_category = ""
 
+		self.close()
+
+
+	def open(self):
+		self.show()
+
+		for category in database_interaction.get_categories():
+			button = self.list_widget.create_button(category)
+			button.clicked.connect(self.category_clicked)
+
+
+	def close(self):
+		self.hide()
+
+		self.list_widget.delete_all_buttons()
 		self.rename_group.setDisabled(True)
 		self.remove_group.setDisabled(True)
 		self.selected_category = ""
@@ -387,9 +402,6 @@ class PropertyEditWidget(QWidget):
 		self.category_list_group.setLayout(QVBoxLayout())
 
 		self.category_list_widget = CustomScrollList(self.category_list_group)
-		for category in database_interaction.get_categories():
-			button = self.category_list_widget.create_button(category)
-			button.clicked.connect(self.category_clicked)
 		self.category_list_group.layout().addWidget(self.category_list_widget)
 
 
@@ -482,7 +494,25 @@ class PropertyEditWidget(QWidget):
 		layout.addWidget(self.remove_group, 2, 2)
 		self.setLayout(layout)
 
+		self.selected_category = ""
+		self.selected_property = ""
 
+		self.hide()
+
+
+	def open(self):
+		self.show()
+
+		for category in database_interaction.get_categories():
+			button = self.category_list_widget.create_button(category)
+			button.clicked.connect(self.category_clicked)
+
+
+	def close(self):
+		self.hide()
+
+		self.category_list_widget.delete_all_buttons()
+		self.property_list_widget.delete_all_buttons()
 		self.add_group.setDisabled(True)
 		self.rename_group.setDisabled(True)
 		self.remove_group.setDisabled(True)
@@ -575,13 +605,16 @@ class PropertyEditWidget(QWidget):
 
 
 window = Window()
-mode_bar = ModeBar(window)
-# category_edit_widget = CategoryEditWidget(window)
+category_edit_widget = CategoryEditWidget(window)
 property_edit_widget = PropertyEditWidget(window)
+descriptor_edit_widget = PropertyEditWidget(window)
+item_edit_widget = PropertyEditWidget(window)
+mode_bar = ModeBar(window)
 
 window.base_widget.layout().addWidget(mode_bar, 0, 0)
-# window.base_widget.layout().addWidget(category_edit_widget, 1, 0)
+window.base_widget.layout().addWidget(category_edit_widget, 1, 0)
 window.base_widget.layout().addWidget(property_edit_widget, 1, 0)
-window.show()
+window.base_widget.layout().addWidget(descriptor_edit_widget, 1, 0)
+window.base_widget.layout().addWidget(item_edit_widget, 1, 0)
 
 app.exec()
