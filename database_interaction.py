@@ -6,12 +6,28 @@ database_filename="database.db"
 
 
 def get_category_id(cursor, category_name):
-	query = f"""
+	category_name = category_name.lower()
+
+	cursor.execute(f"""
 		SELECT category.ID FROM CATEGORIES AS category
 		WHERE category.NAME="{category_name}";
-	"""
-	cursor.execute(query)
+	""")
 	return cursor.fetchone()[0]
+
+
+def get_property_id(cursor, category_name, property_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+
+	category_id = get_category_id(cursor, category_name)
+
+	cursor.execute(f"""
+		SELECT property.ID FROM PROPERTIES AS property
+		WHERE property.CATEGORY_ID="{category_id}"
+		and property.NAME="{property_name}";
+	""")
+	return cursor.fetchone()[0]
+
 
 
 def initialize():
@@ -19,92 +35,122 @@ def initialize():
 		cursor = conn.cursor()
 
 		# Napravi tablicu kategorije i umetni nekoliko kategorija
-		query = """CREATE TABLE CATEGORIES (ID INTEGER PRIMARY KEY, NAME VARCHAR);"""
-		cursor.execute(query)
+		cursor.execute("""
+			CREATE TABLE CATEGORIES
+			(ID INTEGER PRIMARY KEY, NAME VARCHAR);
+		""")
 
-		query = """INSERT INTO CATEGORIES (NAME) VALUES ("odjeća");"""
-		cursor.execute(query)
-		query = """INSERT INTO CATEGORIES (NAME) VALUES ("piće");"""
-		cursor.execute(query)
+		cursor.execute("""
+			INSERT INTO CATEGORIES (NAME)
+			VALUES ("odjeća");
+		""")
+		cursor.execute("""
+			INSERT INTO CATEGORIES (NAME)
+			VALUES ("piće");
+		""")
 
 
 		# Napravi tablicu grupa svojstava
-		query = """CREATE TABLE PROPERTIES (ID INTEGER PRIMARY KEY, NAME VARCHAR, CATEGORY_ID INT);"""
-		cursor.execute(query)
+		cursor.execute("""
+			CREATE TABLE PROPERTIES
+			(ID INTEGER PRIMARY KEY, NAME VARCHAR, CATEGORY_ID INT);
+		""")
 
 		# Umetni grupe svojstava za odjecu (boja, materijal, spol)
-		query = """SELECT category.ID FROM CATEGORIES AS category WHERE category.NAME="odjeća";"""
-		cursor.execute(query)
-		odjeca_category_id = cursor.fetchone()[0]
-		query = f"""INSERT INTO PROPERTIES (NAME, CATEGORY_ID) VALUES ("boja", {odjeca_category_id});"""
-		cursor.execute(query)
-		query = f"""INSERT INTO PROPERTIES (NAME, CATEGORY_ID) VALUES ("materijal", {odjeca_category_id});"""
-		cursor.execute(query)
-		query = f"""INSERT INTO PROPERTIES (NAME, CATEGORY_ID) VALUES ("spol", {odjeca_category_id});"""
-		cursor.execute(query)
+		odjeca_category_id = get_category_id(cursor, "odjeća")
+		cursor.execute(f"""
+			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
+			VALUES ("boja", {odjeca_category_id});
+		""")
+		cursor.execute(f"""
+			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
+			VALUES ("materijal", {odjeca_category_id});
+		""")
+		cursor.execute(f"""
+			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
+			VALUES ("spol", {odjeca_category_id});
+		""")
 
 		# Umetni grupe svojstava za pica (vrsta, ambalaza)
-		query = """SELECT category.ID FROM CATEGORIES AS category WHERE category.NAME="piće";"""
-		cursor.execute(query)
-		pice_category_id = cursor.fetchone()[0]
-		query = f"""INSERT INTO PROPERTIES (NAME, CATEGORY_ID) VALUES ("vrsta", {pice_category_id});"""
-		cursor.execute(query)
-		query = f"""INSERT INTO PROPERTIES (NAME, CATEGORY_ID) VALUES ("ambalaža", {pice_category_id});"""
-		cursor.execute(query)
+		pice_category_id = get_category_id(cursor, "piće")
+		cursor.execute(f"""
+			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
+			VALUES ("vrsta", {pice_category_id});
+		""")
+		cursor.execute(f"""
+			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
+			VALUES ("ambalaža", {pice_category_id});
+		""")
 
 
 		# Napravi tablicu specificnih svojstava
-		query = """CREATE TABLE DESCRIPTORS (ID INTEGER PRIMARY KEY, NAME VARCHAR, PROPERTY_ID INT);"""
-		cursor.execute(query)
+		cursor.execute("""
+			CREATE TABLE DESCRIPTORS
+			(ID INTEGER PRIMARY KEY, NAME VARCHAR, PROPERTY_ID INT);
+		""")
 
 		# Umetni specificna svojstva za boju (crvena, crna, bijela)
-		query = """SELECT property.ID FROM PROPERTIES AS property WHERE property.NAME="boja";"""
-		cursor.execute(query)
-		boja_property_id = cursor.fetchone()[0]
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("crvena", {boja_property_id});"""
-		cursor.execute(query)
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("crna", {boja_property_id});"""
-		cursor.execute(query)
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("bijela", {boja_property_id});"""
-		cursor.execute(query)
+		boja_property_id = get_property_id(cursor, "odjeća", "boja")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("crvena", {boja_property_id});
+		""")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("crna", {boja_property_id});
+		""")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("bijela", {boja_property_id});
+		""")
 
 		# Umetni specificna svojstva za materijal (pamuk, poliester)
-		query = """SELECT property.ID FROM PROPERTIES AS property WHERE property.NAME="materijal";"""
-		cursor.execute(query)
-		materijal_property_id = cursor.fetchone()[0]
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("pamuk", {materijal_property_id});"""
-		cursor.execute(query)
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("poliester", {materijal_property_id});"""
-		cursor.execute(query)
+		materijal_property_id = get_property_id(cursor, "odjeća", "materijal")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("pamuk", {materijal_property_id});
+		""")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("poliester", {materijal_property_id});
+		""")
 
 		# Umetni specificna svojstva za spol (muski, zenski, unisex)
-		query = """SELECT property.ID FROM PROPERTIES AS property WHERE property.NAME="spol";"""
-		cursor.execute(query)
-		spol_property_id = cursor.fetchone()[0]
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("muški", {spol_property_id});"""
-		cursor.execute(query)
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("ženski", {spol_property_id});"""
-		cursor.execute(query)
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("unisex", {spol_property_id});"""
-		cursor.execute(query)
+		spol_property_id = get_property_id(cursor, "odjeća", "spol")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("muški", {spol_property_id});
+		""")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("ženski", {spol_property_id});
+		""")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("unisex", {spol_property_id});
+		""")
 
 		# Umetni specificna svojstva za vrstu pica (gazirano, alkoholno)
-		query = """SELECT property.ID FROM PROPERTIES AS property WHERE property.NAME="vrsta";"""
-		cursor.execute(query)
-		vrsta_pica_property_id = cursor.fetchone()[0]
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("gazirano", {vrsta_pica_property_id});"""
-		cursor.execute(query)
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("alkoholno", {vrsta_pica_property_id});"""
-		cursor.execute(query)
+		vrsta_pica_property_id = get_property_id(cursor, "piće", "vrsta")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("gazirano", {vrsta_pica_property_id});
+		""")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("alkoholno", {vrsta_pica_property_id});
+		""")
 
 		# Umetni specificna svojstva za ambalazu (boca, tetrapak)
-		query = """SELECT property.ID FROM PROPERTIES AS property WHERE property.NAME="ambalaža";"""
-		cursor.execute(query)
-		ambalaza_property_id = cursor.fetchone()[0]
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("boca", {ambalaza_property_id});"""
-		cursor.execute(query)
-		query = f"""INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID) VALUES ("tetrapak", {ambalaza_property_id});"""
-		cursor.execute(query)
+		ambalaza_property_id = get_property_id(cursor, "piće", "ambalaža")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("boca", {ambalaza_property_id});
+		""")
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("tetrapak", {ambalaza_property_id});
+		""")
 
 		conn.commit()
 
@@ -115,8 +161,10 @@ def get_categories():
 	with sqlite3.connect(database_filename) as conn:
 		cursor = conn.cursor()
 
-		query = """SELECT category.name FROM CATEGORIES AS category;"""
-		cursor.execute(query)
+		cursor.execute("""
+			SELECT category.name
+			FROM CATEGORIES AS category;
+		""")
 		categories = [i[0] for i in cursor.fetchall()]
 
 		conn.commit()
@@ -131,8 +179,11 @@ def category_exists(category_name):
 	with sqlite3.connect(database_filename) as conn:
 		cursor = conn.cursor()
 
-		query = f"""SELECT * FROM CATEGORIES AS category WHERE category.NAME="{category_name}";"""
-		cursor.execute(query)
+		cursor.execute(f"""
+			SELECT *
+			FROM CATEGORIES AS category
+			WHERE category.NAME="{category_name}";
+		""")
 		categories = [i[0] for i in cursor.fetchall()]
 
 		conn.commit()
@@ -149,8 +200,10 @@ def add_category(category_name):
 	with sqlite3.connect(database_filename) as conn:
 		cursor = conn.cursor()
 
-		query = f"""INSERT INTO CATEGORIES (NAME) VALUES ("{category_name}");"""
-		cursor.execute(query)
+		cursor.execute(f"""
+			INSERT INTO CATEGORIES (NAME)
+			VALUES ("{category_name}");
+		""")
 
 		conn.commit()
 
@@ -162,12 +215,13 @@ def rename_category(current_category_name, new_category_name):
 	with sqlite3.connect(database_filename) as conn:
 		cursor = conn.cursor()
 
-		query = f"""SELECT category.ID FROM CATEGORIES AS category WHERE category.NAME="{current_category_name}";"""
-		cursor.execute(query)
-		category_id = cursor.fetchone()[0]
+		category_id = get_category_id(cursor, current_category_name)
 
-		query = f"""UPDATE CATEGORIES AS category SET NAME="{new_category_name}" WHERE category.ID={category_id};"""
-		cursor.execute(query)
+		cursor.execute(f"""
+			UPDATE CATEGORIES AS category
+			SET NAME="{new_category_name}"
+			WHERE category.ID={category_id};
+		""")
 
 		conn.commit()
 
@@ -178,8 +232,11 @@ def remove_category(category_name):
 	with sqlite3.connect(database_filename) as conn:
 		cursor = conn.cursor()
 
-		query = f"""DELETE FROM CATEGORIES WHERE NAME="{category_name}";"""
-		cursor.execute(query)
+		cursor.execute(f"""
+			DELETE
+			FROM CATEGORIES
+			WHERE NAME="{category_name}";
+		""")
 
 		conn.commit()
 
@@ -194,12 +251,11 @@ def get_properties(category_name):
 
 		category_id = get_category_id(cursor, category_name)
 
-		query = f"""
+		cursor.execute(f"""
 			SELECT property.NAME
 			FROM PROPERTIES AS property
 			WHERE property.CATEGORY_ID={category_id};
-		"""
-		cursor.execute(query)
+		""")
 		properties = [i[0] for i in cursor.fetchall()]
 
 		conn.commit()
@@ -217,13 +273,12 @@ def property_exists(category_name, property_name):
 
 		category_id = get_category_id(cursor, category_name)
 
-		query = f"""
+		cursor.execute(f"""
 			SELECT *
 			FROM PROPERTIES AS property
 			WHERE property.NAME="{property_name}"
 			AND property.CATEGORY_ID={category_id};
-		"""
-		cursor.execute(query)
+		""")
 		properties = [i[0] for i in cursor.fetchall()]
 
 		conn.commit()
@@ -243,11 +298,10 @@ def add_property(category_name, property_name):
 
 		category_id = get_category_id(cursor, category_name)
 
-		query = f"""
+		cursor.execute(f"""
 			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
 			VALUES ("{property_name}", {category_id});
-		"""
-		cursor.execute(query)
+		""")
 
 		conn.commit()
 
@@ -262,13 +316,12 @@ def rename_property(category_name, current_property_name, new_property_name):
 
 		category_id = get_category_id(cursor, category_name)
 
-		query = f"""
+		cursor.execute(f"""
 			UPDATE PROPERTIES AS property
 			SET NAME="{new_property_name}"
 			WHERE property.NAME="{current_property_name}"
 			AND property.CATEGORY_ID={category_id};
-		"""
-		cursor.execute(query)
+		""")
 
 		conn.commit()
 
@@ -282,12 +335,11 @@ def remove_property(category_name, property_name):
 
 		category_id = get_category_id(cursor, category_name)
 
-		query = f"""
+		cursor.execute(f"""
 			DELETE
 			FROM PROPERTIES AS property
 			WHERE property.NAME="{property_name}"
 			AND property.CATEGORY_ID={category_id};
-		"""
-		cursor.execute(query)
+		""")
 
 		conn.commit()
