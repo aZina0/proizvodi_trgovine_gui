@@ -1,5 +1,4 @@
 from PySide6.QtWidgets import *
-from PySide6.QtCore import Signal
 import sys
 import os
 import database_interaction
@@ -113,6 +112,11 @@ class CustomScrollList(QScrollArea):
 		button.deleteLater()
 
 
+	def delete_all_buttons(self):
+		while len(self.buttons) > 0:
+			button = list(self.buttons)[0]
+			self.delete_button(button)
+
 
 
 
@@ -121,7 +125,7 @@ class Window(QMainWindow):
 	def __init__(self):
 		super().__init__()
 		self.setMinimumSize(794, 400)
-		self.setWindowTitle("Uređivač proizvoda i njihovih svojstava")
+		self.setWindowTitle("Uređivač proizvoda/svojstava")
 
 		self.base_widget = QWidget(self)
 		self.base_widget.setLayout(QGridLayout())
@@ -363,12 +367,221 @@ class CategoryEditWidget(QWidget):
 
 
 
+
+class PropertyEditWidget(QWidget):
+	def __init__(self, parent):
+		super().__init__(parent)
+
+		self.setStyleSheet(
+			"""
+			QPushButton {
+				font-size: 13pt;
+				height: 30;
+				margin-left: 70;
+			}
+			"""
+		)
+
+
+		self.category_list_group = QGroupBox("Kategorije")
+		self.category_list_group.setLayout(QVBoxLayout())
+
+		self.category_list_widget = CustomScrollList(self.category_list_group)
+		for category in database_interaction.get_categories():
+			button = self.category_list_widget.create_button(category)
+			button.clicked.connect(self.category_clicked)
+		self.category_list_group.layout().addWidget(self.category_list_widget)
+
+
+		self.property_list_group = QGroupBox("Grupe svojstava")
+		self.property_list_group.setLayout(QVBoxLayout())
+
+		self.property_list_widget = CustomScrollList(self.property_list_group)
+		self.property_list_group.layout().addWidget(self.property_list_widget)
+
+
+		self.add_group = QGroupBox("Dodaj grupu svojstava")
+		self.add_group.setLayout(QVBoxLayout())
+
+		self.add_text = QLineEdit()
+		self.add_text.setPlaceholderText("naziv grupe svojstava")
+		self.add_group.layout().addWidget(self.add_text)
+
+		self.add_button = QPushButton("Dodaj")
+		self.add_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #008900;
+			}
+
+			QPushButton::disabled {
+				background-color: #005600;
+				color: #2D4F2D;
+			}
+			"""
+		)
+		self.add_button.clicked.connect(self.add_button_clicked)
+		self.add_group.layout().addWidget(self.add_button)
+
+
+		self.rename_group = QGroupBox("Preimenuj grupu svojstava")
+		self.rename_group.setLayout(QVBoxLayout())
+
+		self.rename_text = QLineEdit()
+		self.rename_text.setPlaceholderText("novi naziv grupe svojstava")
+		self.rename_group.layout().addWidget(self.rename_text)
+
+		self.rename_button = QPushButton("Preimenuj")
+		self.rename_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #666666;
+			}
+
+			QPushButton::disabled {
+				background-color: #474747;
+				color: #727272;
+			}
+			"""
+		)
+		self.rename_button.clicked.connect(self.rename_button_clicked)
+		self.rename_group.layout().addWidget(self.rename_button)
+
+
+		self.remove_group = QGroupBox("Izbriši grupu svojstava")
+		self.remove_group.setLayout(QVBoxLayout())
+
+		self.remove_button = QPushButton("Izbriši")
+		self.remove_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #890000;
+			}
+
+			QPushButton::disabled {
+				background-color: #560000;
+				color: #895959;
+			}
+			"""
+		)
+		self.remove_button.clicked.connect(self.remove_button_clicked)
+		self.remove_group.layout().addWidget(self.remove_button)
+
+
+		layout = QGridLayout(self)
+		layout.setRowStretch(0, 2)
+		layout.setRowStretch(1, 2)
+		layout.setRowStretch(2, 1)
+		layout.setColumnStretch(0, 1)
+		layout.setColumnStretch(1, 1)
+		layout.setColumnStretch(2, 1)
+		layout.addWidget(self.category_list_group, 0, 0, 3, 1)
+		layout.addWidget(self.property_list_group, 0, 1, 3, 1)
+		layout.addWidget(self.add_group, 0, 2)
+		layout.addWidget(self.rename_group, 1, 2)
+		layout.addWidget(self.remove_group, 2, 2)
+		self.setLayout(layout)
+
+
+		self.add_group.setDisabled(True)
+		self.rename_group.setDisabled(True)
+		self.remove_group.setDisabled(True)
+		self.selected_category = ""
+		self.selected_property = ""
+
+
+	def category_clicked(self):
+		category = self.sender().property("name")
+
+		if self.selected_category == "" or self.selected_category != category:
+			self.selected_category = category
+			self.add_group.setDisabled(False)
+		elif self.selected_category == category:
+			self.selected_category = ""
+			self.selected_property = ""
+			self.add_group.setDisabled(True)
+
+		self.rename_group.setDisabled(True)
+		self.remove_group.setDisabled(True)
+
+		self.property_list_widget.delete_all_buttons()
+
+		if self.selected_category == "":
+			return
+
+		for property in database_interaction.get_properties(self.selected_category):
+			button = self.property_list_widget.create_button(property)
+			button.clicked.connect(self.property_clicked)
+
+
+	def property_clicked(self):
+		property = self.sender().property("name")
+
+		if self.selected_property == "" or self.selected_property != property:
+			self.selected_property = property
+			self.rename_group.setDisabled(False)
+			self.remove_group.setDisabled(False)
+		elif self.selected_property == property:
+			self.selected_property = ""
+			self.rename_group.setDisabled(True)
+			self.remove_group.setDisabled(True)
+
+
+	def add_button_clicked(self):
+		new_property_name = self.add_text.text()
+
+		if new_property_name == "":
+			return
+
+		if self.selected_category == "":
+			return
+
+		if database_interaction.property_exists(self.selected_category, new_property_name):
+			return
+
+		database_interaction.add_property(self.selected_category, new_property_name)
+
+		button = self.property_list_widget.create_button(new_property_name)
+		button.clicked.connect(self.property_clicked)
+
+
+	def rename_button_clicked(self):
+		current_property_name = self.selected_property
+		new_property_name = self.rename_text.text()
+
+		if database_interaction.property_exists(self.selected_category, new_property_name):
+			return
+
+		database_interaction.rename_property(self.selected_category, current_property_name, new_property_name)
+
+		self.property_list_widget.rename_button(current_property_name, new_property_name)
+		self.selected_property = new_property_name
+
+
+	def remove_button_clicked(self):
+		property_name = self.selected_property
+
+		if not database_interaction.property_exists(self.selected_category, property_name):
+			return
+
+		database_interaction.remove_property(self.selected_category, property_name)
+		self.property_list_widget.delete_button(property_name)
+
+		self.rename_group.setDisabled(True)
+		self.remove_group.setDisabled(True)
+
+
+
+
+
 window = Window()
 mode_bar = ModeBar(window)
-category_edit_widget = CategoryEditWidget(window)
+# category_edit_widget = CategoryEditWidget(window)
+property_edit_widget = PropertyEditWidget(window)
 
 window.base_widget.layout().addWidget(mode_bar, 0, 0)
-window.base_widget.layout().addWidget(category_edit_widget, 1, 0)
+# window.base_widget.layout().addWidget(category_edit_widget, 1, 0)
+window.base_widget.layout().addWidget(property_edit_widget, 1, 0)
 window.show()
 
 app.exec()

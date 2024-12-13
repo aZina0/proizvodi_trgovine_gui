@@ -4,6 +4,16 @@ import sqlite3
 database_filename="database.db"
 
 
+
+def get_category_id(cursor, category_name):
+	query = f"""
+		SELECT category.ID FROM CATEGORIES AS category
+		WHERE category.NAME="{category_name}";
+	"""
+	cursor.execute(query)
+	return cursor.fetchone()[0]
+
+
 def initialize():
 	with sqlite3.connect(database_filename) as conn:
 		cursor = conn.cursor()
@@ -116,6 +126,7 @@ def get_categories():
 
 def category_exists(category_name):
 	category_name = category_name.lower()
+	categories = []
 
 	with sqlite3.connect(database_filename) as conn:
 		cursor = conn.cursor()
@@ -168,6 +179,115 @@ def remove_category(category_name):
 		cursor = conn.cursor()
 
 		query = f"""DELETE FROM CATEGORIES WHERE NAME="{category_name}";"""
+		cursor.execute(query)
+
+		conn.commit()
+
+
+
+def get_properties(category_name):
+	category_name = category_name.lower()
+	properties = []
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		category_id = get_category_id(cursor, category_name)
+
+		query = f"""
+			SELECT property.NAME
+			FROM PROPERTIES AS property
+			WHERE property.CATEGORY_ID={category_id};
+		"""
+		cursor.execute(query)
+		properties = [i[0] for i in cursor.fetchall()]
+
+		conn.commit()
+
+	return properties
+
+
+def property_exists(category_name, property_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+	properties = []
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		category_id = get_category_id(cursor, category_name)
+
+		query = f"""
+			SELECT *
+			FROM PROPERTIES AS property
+			WHERE property.NAME="{property_name}"
+			AND property.CATEGORY_ID={category_id};
+		"""
+		cursor.execute(query)
+		properties = [i[0] for i in cursor.fetchall()]
+
+		conn.commit()
+
+	if len(properties) > 0:
+		return True
+	else:
+		return False
+
+
+def add_property(category_name, property_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		category_id = get_category_id(cursor, category_name)
+
+		query = f"""
+			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
+			VALUES ("{property_name}", {category_id});
+		"""
+		cursor.execute(query)
+
+		conn.commit()
+
+
+def rename_property(category_name, current_property_name, new_property_name):
+	category_name = category_name.lower()
+	current_property_name = current_property_name.lower()
+	new_property_name = new_property_name.lower()
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		category_id = get_category_id(cursor, category_name)
+
+		query = f"""
+			UPDATE PROPERTIES AS property
+			SET NAME="{new_property_name}"
+			WHERE property.NAME="{current_property_name}"
+			AND property.CATEGORY_ID={category_id};
+		"""
+		cursor.execute(query)
+
+		conn.commit()
+
+
+def remove_property(category_name, property_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		category_id = get_category_id(cursor, category_name)
+
+		query = f"""
+			DELETE
+			FROM PROPERTIES AS property
+			WHERE property.NAME="{property_name}"
+			AND property.CATEGORY_ID={category_id};
+		"""
 		cursor.execute(query)
 
 		conn.commit()
