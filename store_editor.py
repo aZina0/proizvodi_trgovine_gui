@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import *
+from PySide6.QtCore import Qt
 import sys
 import os
 import database_interaction
@@ -135,6 +136,17 @@ class Window(QMainWindow):
 		self.base_widget.layout().setColumnStretch(0, 1)
 		self.setCentralWidget(self.base_widget)
 
+		self.background_instruction = QLabel("^\nOdaberi način rada\n")
+		self.background_instruction.setAlignment(Qt.AlignCenter)
+		self.background_instruction.setStyleSheet("""
+			QLabel {
+				font: bold;
+				font-size: 30pt;
+				color: #2D2D2D;
+			}
+		""")
+		self.base_widget.layout().addWidget(self.background_instruction, 1, 0)
+
 		self.show()
 
 
@@ -195,16 +207,19 @@ class ModeBar(QWidget):
 		if self.selected_key == "":
 			self.selected_key = clicked_button_key
 			self.linked_widgets[clicked_button_key].open()
+			window.background_instruction.hide()
 
 		elif clicked_button_key == self.selected_key:
 			self.linked_widgets[self.selected_key].close()
 			self.selected_key = ""
+			window.background_instruction.show()
 
 		elif clicked_button_key != self.selected_key:
 			self.linked_widgets[self.selected_key].close()
 			self.buttons[self.selected_key].setChecked(False)
 			self.linked_widgets[clicked_button_key].open()
 			self.selected_key = clicked_button_key
+			window.background_instruction.hide()
 
 
 
@@ -379,7 +394,6 @@ class CategoryEditWidget(QWidget):
 
 		self.rename_group.setDisabled(True)
 		self.remove_group.setDisabled(True)
-
 
 
 
