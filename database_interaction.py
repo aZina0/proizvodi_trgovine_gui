@@ -343,3 +343,112 @@ def remove_property(category_name, property_name):
 		""")
 
 		conn.commit()
+
+
+
+def get_descriptors(category_name, property_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+	descriptors = []
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		property_id = get_property_id(cursor, category_name, property_name)
+
+		cursor.execute(f"""
+			SELECT descriptor.NAME
+			FROM DESCRIPTORS AS descriptor
+			WHERE descriptor.PROPERTY_ID={property_id};
+		""")
+		descriptors = [i[0] for i in cursor.fetchall()]
+
+		conn.commit()
+
+	return descriptors
+
+
+def descriptor_exists(category_name, property_name, descriptor_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+	descriptor_name = descriptor_name.lower()
+	descriptors = []
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		property_id = get_property_id(cursor, category_name, property_name)
+
+		cursor.execute(f"""
+			SELECT *
+			FROM DESCRIPTORS AS descriptor
+			WHERE descriptor.NAME="{descriptor_name}"
+			AND descriptor.PROPERTY_ID={property_id};
+		""")
+		descriptors = [i[0] for i in cursor.fetchall()]
+
+		conn.commit()
+
+	if len(descriptors) > 0:
+		return True
+	else:
+		return False
+
+
+def add_descriptor(category_name, property_name, descriptor_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+	descriptor_name = descriptor_name.lower()
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		property_id = get_property_id(cursor, category_name, property_name)
+
+		cursor.execute(f"""
+			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
+			VALUES ("{descriptor_name}", {property_id});
+		""")
+
+		conn.commit()
+
+
+def rename_descriptor(category_name, property_name, current_descriptor_name, new_descriptor_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+	current_descriptor_name = current_descriptor_name.lower()
+	new_descriptor_name = new_descriptor_name.lower()
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		property_id = get_property_id(cursor, category_name, property_name)
+
+		cursor.execute(f"""
+			UPDATE DESCRIPTORS AS descriptor
+			SET NAME="{new_descriptor_name}"
+			WHERE descriptor.NAME="{current_descriptor_name}"
+			AND descriptor.PROPERTY_ID={property_id};
+		""")
+
+		conn.commit()
+
+
+def remove_descriptor(category_name, property_name, descriptor_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+	descriptor_name = descriptor_name.lower()
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		property_id = get_property_id(cursor, category_name, property_name)
+
+		cursor.execute(f"""
+			DELETE
+			FROM DESCRIPTORS AS descriptor
+			WHERE descriptor.NAME="{descriptor_name}"
+			AND descriptor.PROPERTY_ID={property_id};
+		""")
+
+		conn.commit()

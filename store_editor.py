@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import *
-from PySide6.QtCore import Qt
+from PySide6.QtGui import *
+from PySide6.QtCore import *
 import sys
 import os
 import database_interaction
@@ -128,6 +129,7 @@ class Window(QMainWindow):
 		super().__init__()
 		self.setMinimumSize(794, 400)
 		self.setWindowTitle("Uređivač proizvoda/svojstava")
+		self.setWindowIcon(QIcon("resources/settings.png"))
 
 		self.base_widget = QWidget(self)
 		self.base_widget.setLayout(QGridLayout())
@@ -366,6 +368,8 @@ class CategoryEditWidget(QWidget):
 
 		database_interaction.add_category(new_category_name)
 
+		self.add_text.setText("")
+
 		button = self.list_widget.create_button(new_category_name)
 		button.clicked.connect(self.category_clicked)
 
@@ -378,6 +382,8 @@ class CategoryEditWidget(QWidget):
 			return
 
 		database_interaction.rename_category(current_category_name, new_category_name)
+
+		self.rename_text.setText("")
 
 		self.list_widget.rename_button(current_category_name, new_category_name)
 		self.selected_category = new_category_name
@@ -511,7 +517,7 @@ class PropertyEditWidget(QWidget):
 		self.selected_category = ""
 		self.selected_property = ""
 
-		self.hide()
+		self.close()
 
 
 	def open(self):
@@ -585,6 +591,8 @@ class PropertyEditWidget(QWidget):
 
 		database_interaction.add_property(self.selected_category, new_property_name)
 
+		self.add_text.setText("")
+
 		button = self.property_list_widget.create_button(new_property_name)
 		button.clicked.connect(self.property_clicked)
 
@@ -597,6 +605,8 @@ class PropertyEditWidget(QWidget):
 			return
 
 		database_interaction.rename_property(self.selected_category, current_property_name, new_property_name)
+
+		self.rename_text.setText("")
 
 		self.property_list_widget.rename_button(current_property_name, new_property_name)
 		self.selected_property = new_property_name
@@ -616,12 +626,295 @@ class PropertyEditWidget(QWidget):
 
 
 
+class DescriptorEditWidget(QWidget):
+	def __init__(self, parent):
+		super().__init__(parent)
+
+		self.setStyleSheet(
+			"""
+			QPushButton {
+				font-size: 13pt;
+				height: 30;
+				margin-left: 70;
+			}
+			"""
+		)
+
+
+		self.category_list_group = QGroupBox("Kategorije")
+		self.category_list_group.setLayout(QVBoxLayout())
+
+		self.category_list_widget = CustomScrollList(self.category_list_group)
+		self.category_list_group.layout().addWidget(self.category_list_widget)
+
+
+		self.property_list_group = QGroupBox("Grupe svojstava")
+		self.property_list_group.setLayout(QVBoxLayout())
+
+		self.property_list_widget = CustomScrollList(self.property_list_group)
+		self.property_list_group.layout().addWidget(self.property_list_widget)
+
+
+		self.descriptor_list_group = QGroupBox("Svojstva")
+		self.descriptor_list_group.setLayout(QVBoxLayout())
+
+		self.descriptor_list_widget = CustomScrollList(self.descriptor_list_group)
+		self.descriptor_list_group.layout().addWidget(self.descriptor_list_widget)
+
+
+		self.add_group = QGroupBox("Dodaj svojstvo")
+		self.add_group.setLayout(QVBoxLayout())
+
+		self.add_text = QLineEdit()
+		self.add_text.setPlaceholderText("naziv svojstva")
+		self.add_group.layout().addWidget(self.add_text)
+
+		self.add_button = QPushButton("Dodaj")
+		self.add_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #008900;
+			}
+
+			QPushButton::disabled {
+				background-color: #005600;
+				color: #2D4F2D;
+			}
+			"""
+		)
+		self.add_button.clicked.connect(self.add_button_clicked)
+		self.add_group.layout().addWidget(self.add_button)
+
+
+		self.rename_group = QGroupBox("Preimenuj svojstvo")
+		self.rename_group.setLayout(QVBoxLayout())
+
+		self.rename_text = QLineEdit()
+		self.rename_text.setPlaceholderText("novi naziv svojstva")
+		self.rename_group.layout().addWidget(self.rename_text)
+
+		self.rename_button = QPushButton("Preimenuj")
+		self.rename_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #666666;
+			}
+
+			QPushButton::disabled {
+				background-color: #474747;
+				color: #727272;
+			}
+			"""
+		)
+		self.rename_button.clicked.connect(self.rename_button_clicked)
+		self.rename_group.layout().addWidget(self.rename_button)
+
+
+		self.remove_group = QGroupBox("Izbriši svojstvo")
+		self.remove_group.setLayout(QVBoxLayout())
+
+		self.remove_button = QPushButton("Izbriši")
+		self.remove_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #890000;
+			}
+
+			QPushButton::disabled {
+				background-color: #560000;
+				color: #895959;
+			}
+			"""
+		)
+		self.remove_button.clicked.connect(self.remove_button_clicked)
+		self.remove_group.layout().addWidget(self.remove_button)
+
+
+		layout = QGridLayout(self)
+		layout.setRowStretch(0, 2)
+		layout.setRowStretch(1, 2)
+		layout.setRowStretch(2, 1)
+		layout.setColumnStretch(0, 2)
+		layout.setColumnStretch(1, 2)
+		layout.setColumnStretch(2, 2)
+		layout.setColumnStretch(3, 3)
+		layout.addWidget(self.category_list_group, 0, 0, 3, 1)
+		layout.addWidget(self.property_list_group, 0, 1, 3, 1)
+		layout.addWidget(self.descriptor_list_group, 0, 2, 3, 1)
+		layout.addWidget(self.add_group, 0, 3)
+		layout.addWidget(self.rename_group, 1, 3)
+		layout.addWidget(self.remove_group, 2, 3)
+		self.setLayout(layout)
+
+		self.selected_category = ""
+		self.selected_property = ""
+		self.selected_descriptor = ""
+
+		self.close()
+
+
+	def open(self):
+		self.show()
+
+		for category in database_interaction.get_categories():
+			button = self.category_list_widget.create_button(category)
+			button.clicked.connect(self.category_clicked)
+
+
+	def close(self):
+		self.hide()
+
+		self.category_list_widget.delete_all_buttons()
+		self.property_list_widget.delete_all_buttons()
+		self.descriptor_list_widget.delete_all_buttons()
+		self.add_group.setDisabled(True)
+		self.rename_group.setDisabled(True)
+		self.remove_group.setDisabled(True)
+		self.selected_category = ""
+		self.selected_property = ""
+		self.selected_descriptor = ""
+
+
+	def category_clicked(self):
+		category = self.sender().property("name")
+
+		if self.selected_category == "" or self.selected_category != category:
+			self.selected_category = category
+		elif self.selected_category == category:
+			self.selected_category = ""
+			self.selected_property = ""
+			self.selected_descriptor = ""
+
+		self.add_group.setDisabled(True)
+		self.rename_group.setDisabled(True)
+		self.remove_group.setDisabled(True)
+
+		self.property_list_widget.delete_all_buttons()
+		self.descriptor_list_widget.delete_all_buttons()
+
+		if self.selected_category == "":
+			return
+
+		for property in database_interaction.get_properties(self.selected_category):
+			button = self.property_list_widget.create_button(property)
+			button.clicked.connect(self.property_clicked)
+
+
+	def property_clicked(self):
+		property = self.sender().property("name")
+
+		if self.selected_property == "" or self.selected_property != property:
+			self.selected_property = property
+			self.add_group.setDisabled(False)
+		elif self.selected_property == property:
+			self.selected_property = ""
+			self.add_group.setDisabled(True)
+
+		self.rename_group.setDisabled(True)
+		self.remove_group.setDisabled(True)
+
+		self.descriptor_list_widget.delete_all_buttons()
+
+		if self.selected_property == "":
+			return
+
+		for descriptor in database_interaction.get_descriptors(self.selected_category, property):
+			button = self.descriptor_list_widget.create_button(descriptor)
+			button.clicked.connect(self.descriptor_clicked)
+
+
+	def descriptor_clicked(self):
+		descriptor = self.sender().property("name")
+
+		if self.selected_descriptor == "" or self.selected_descriptor != descriptor:
+			self.selected_descriptor = descriptor
+			self.rename_group.setDisabled(False)
+			self.remove_group.setDisabled(False)
+		elif self.selected_descriptor == descriptor:
+			self.selected_descriptor = ""
+			self.rename_group.setDisabled(True)
+			self.remove_group.setDisabled(True)
+
+
+	def add_button_clicked(self):
+		new_descriptor_name = self.add_text.text()
+
+		if new_descriptor_name == "":
+			return
+
+		if self.selected_category == "" or self.selected_property == "":
+			return
+
+		if database_interaction.descriptor_exists(
+			self.selected_category,
+			self.selected_property,
+			new_descriptor_name
+		):
+			return
+
+		database_interaction.add_descriptor(
+			self.selected_category,
+			self.selected_property,
+			new_descriptor_name
+		)
+
+		self.add_text.setText("")
+
+		button = self.descriptor_list_widget.create_button(new_descriptor_name)
+		button.clicked.connect(self.descriptor_clicked)
+
+
+	def rename_button_clicked(self):
+		current_descriptor_name = self.selected_descriptor
+		new_descriptor_name = self.rename_text.text()
+
+		if database_interaction.descriptor_exists(
+			self.selected_category,
+			self.selected_property,
+			new_descriptor_name
+		):
+			return
+
+		database_interaction.rename_descriptor(
+			self.selected_category,
+			self.selected_property,
+			current_descriptor_name,
+			new_descriptor_name
+		)
+
+		self.rename_text.setText("")
+
+		self.descriptor_list_widget.rename_button(current_descriptor_name, new_descriptor_name)
+		self.selected_descriptor = new_descriptor_name
+
+
+	def remove_button_clicked(self):
+		descriptor_name = self.selected_descriptor
+
+		if not database_interaction.descriptor_exists(
+			self.selected_category,
+			self.selected_property,
+			descriptor_name
+		):
+			return
+
+		database_interaction.remove_descriptor(
+			self.selected_category,
+			self.selected_property,
+			descriptor_name
+		)
+		self.descriptor_list_widget.delete_button(descriptor_name)
+
+		self.rename_group.setDisabled(True)
+		self.remove_group.setDisabled(True)
+
+
 
 
 window = Window()
 category_edit_widget = CategoryEditWidget(window)
 property_edit_widget = PropertyEditWidget(window)
-descriptor_edit_widget = PropertyEditWidget(window)
+descriptor_edit_widget = DescriptorEditWidget(window)
 item_edit_widget = PropertyEditWidget(window)
 mode_bar = ModeBar(window)
 
