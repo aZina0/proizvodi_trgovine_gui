@@ -232,6 +232,22 @@ def remove_category(category_name):
 	with sqlite3.connect(database_filename) as conn:
 		cursor = conn.cursor()
 
+		for property_name in get_properties(category_name):
+			property_id = get_property_id(cursor, category_name, property_name)
+
+			cursor.execute(f"""
+				DELETE
+				FROM DESCRIPTORS
+				WHERE PROPERTY_ID={property_id};
+			""")
+
+		category_id = get_category_id(cursor, category_name)
+		cursor.execute(f"""
+			DELETE
+			FROM PROPERTIES
+			WHERE CATEGORY_ID={category_id};
+		""")
+
 		cursor.execute(f"""
 			DELETE
 			FROM CATEGORIES
@@ -333,8 +349,14 @@ def remove_property(category_name, property_name):
 	with sqlite3.connect(database_filename) as conn:
 		cursor = conn.cursor()
 
-		category_id = get_category_id(cursor, category_name)
+		property_id = get_property_id(cursor, category_name, property_name)
+		cursor.execute(f"""
+			DELETE
+			FROM DESCRIPTORS
+			WHERE PROPERTY_ID={property_id};
+		""")
 
+		category_id = get_category_id(cursor, category_name)
 		cursor.execute(f"""
 			DELETE
 			FROM PROPERTIES AS property
