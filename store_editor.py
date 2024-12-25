@@ -144,7 +144,7 @@ class Window(QMainWindow):
 			QLabel {
 				font: bold;
 				font-size: 30pt;
-				color: #2D2D2D;
+				color: #3C3C3C;
 			}
 		""")
 		self.base_widget.layout().addWidget(self.background_instruction, 1, 0)
@@ -158,6 +158,9 @@ class ModeBar(QWidget):
 		super().__init__(parent)
 
 		self.setStyleSheet("""
+			QWidget {
+				background-color: #141414;
+			}
 			QPushButton {
 				font-size: 13pt;
 				height: 30;
@@ -167,61 +170,176 @@ class ModeBar(QWidget):
 			}
 
 			QPushButton::checked {
-				background-color: #1E1E1E;
+				background-color: #141414;
 				border-bottom: 0px;
 			}
 		""")
 
-		self.selected_key = ""
+		self.selected_primary_key = ""
+		self.selected_secondary_key = ""
 
-		self.buttons = {
+		self.secondary_widgets = {
+			"categories_properties": QWidget(self),
+			"items": QWidget(self),
+		}
+
+		for widget in self.secondary_widgets.values():
+			widget.setStyleSheet("""
+				QPushButton {
+					font-size: 13pt;
+					height: 30;
+					background-color: #141414;
+					border: 1px solid #878787;
+					margin: 10px 0 0 0;
+				}
+
+				QPushButton::checked {
+					background-color: #1E1E1E;
+					border-bottom: 0px;
+				}
+			""")
+
+
+		self.primary_buttons = {
+			"categories_properties": QPushButton("Kategorije/svojstva"),
+			"items": QPushButton("Proizvodi"),
+		}
+
+		self.secondary_buttons = {
 			"category_edit": QPushButton("Dodaj/uredi kategorije"),
 			"property_edit": QPushButton("Dodaj/uredi grupe svojstava"),
 			"descriptor_edit": QPushButton("Dodaj/uredi svojstva"),
-			"item_edit": QPushButton("Dodaj/uredi proizvode"),
+			"item_add": QPushButton("Dodaj proizvod"),
+			"item_edit": QPushButton("Uredi proizvod"),
+			"item_delete": QPushButton("Izbriši proizvod"),
 		}
 
-		for key in self.buttons:
-			self.buttons[key].setCheckable(True)
-			self.buttons[key].setProperty("key", key)
-			self.buttons[key].clicked.connect(self.button_clicked)
+		for primary_key in self.primary_buttons:
+			self.primary_buttons[primary_key].setCheckable(True)
+			self.primary_buttons[primary_key].setProperty("key", primary_key)
+			self.primary_buttons[primary_key].clicked.connect(self.primary_button_clicked)
+
+		for secondary_key in self.secondary_buttons:
+			self.secondary_buttons[secondary_key].setCheckable(True)
+			self.secondary_buttons[secondary_key].setProperty("key", secondary_key)
+			self.secondary_buttons[secondary_key].clicked.connect(self.secondary_button_clicked)
+
 
 		self.linked_widgets = {
 			"category_edit": category_edit_widget,
 			"property_edit": property_edit_widget,
 			"descriptor_edit": descriptor_edit_widget,
-			"item_edit": item_edit_widget,
 		}
 
 
 		self.setLayout(QGridLayout())
 		self.layout().setContentsMargins(0, 0, 0, 0)
 		self.layout().setSpacing(0)
-		self.layout().addWidget(self.buttons["category_edit"], 0, 0)
-		self.layout().addWidget(self.buttons["property_edit"], 0, 1)
-		self.layout().addWidget(self.buttons["descriptor_edit"], 0, 2)
-		self.layout().addWidget(self.buttons["item_edit"], 0, 3)
+		self.layout().addWidget(self.primary_buttons["categories_properties"], 0, 0)
+		self.layout().addWidget(self.primary_buttons["items"], 0, 1)
+		self.layout().addWidget(self.secondary_widgets["categories_properties"], 1, 0, 1, 2)
+		self.layout().addWidget(self.secondary_widgets["items"], 1, 0, 1, 2)
+
+		self.secondary_widgets["categories_properties"].setLayout(QGridLayout())
+		self.secondary_widgets["categories_properties"].layout().setContentsMargins(0, 0, 0, 0)
+		self.secondary_widgets["categories_properties"].layout().setSpacing(0)
+		self.secondary_widgets["categories_properties"].layout().addWidget(
+			self.secondary_buttons["category_edit"], 0, 0
+		)
+		self.secondary_widgets["categories_properties"].layout().addWidget(
+			self.secondary_buttons["property_edit"], 0, 1
+		)
+		self.secondary_widgets["categories_properties"].layout().addWidget(
+			self.secondary_buttons["descriptor_edit"], 0, 2
+		)
+
+		self.secondary_widgets["items"].setLayout(QGridLayout())
+		self.secondary_widgets["items"].layout().setContentsMargins(0, 0, 0, 0)
+		self.secondary_widgets["items"].layout().setSpacing(0)
+		self.secondary_widgets["items"].layout().addWidget(
+			self.secondary_buttons["item_add"], 0, 0
+		)
+		self.secondary_widgets["items"].layout().addWidget(
+			self.secondary_buttons["item_edit"], 0, 1
+		)
+		self.secondary_widgets["items"].layout().addWidget(
+			self.secondary_buttons["item_delete"], 0, 2
+		)
 
 
-	def button_clicked(self):
+		self.secondary_widgets["categories_properties"].hide()
+		self.secondary_widgets["items"].hide()
+
+
+	def primary_button_clicked(self):
 		clicked_button_key = self.sender().property("key")
 
-		if self.selected_key == "":
-			self.selected_key = clicked_button_key
-			self.linked_widgets[clicked_button_key].open()
+		if self.selected_primary_key == "":
+			self.selected_primary_key = clicked_button_key
+			self.secondary_widgets[clicked_button_key].show()
+
+		elif clicked_button_key != self.selected_primary_key:
+			self.secondary_widgets[self.selected_primary_key].hide()
+			self.primary_buttons[self.selected_primary_key].setChecked(False)
+
+			if self.selected_secondary_key != "":
+				match self.selected_primary_key:
+					case "categories_properties":
+						self.linked_widgets[self.selected_secondary_key].close()
+
+				self.secondary_buttons[self.selected_secondary_key].setChecked(False)
+				self.selected_secondary_key = ""
+
+			self.selected_primary_key = clicked_button_key
+			self.secondary_widgets[clicked_button_key].show()
+
+		elif clicked_button_key == self.selected_primary_key:
+			self.secondary_widgets[self.selected_primary_key].hide()
+			self.primary_buttons[self.selected_primary_key].setChecked(False)
+			self.selected_primary_key = ""
+
+
+	def secondary_button_clicked(self):
+		clicked_button_key = self.sender().property("key")
+
+		if self.selected_secondary_key == "":
+			match clicked_button_key:
+				case "category_edit" | "property_edit" | "descriptor_edit":
+					self.linked_widgets[clicked_button_key].open()
+				case "item_add":
+					item_edit_widget.switch_to_item_add()
+				case "item_edit":
+					item_edit_widget.switch_to_item_edit()
+				case "item_delete":
+					item_edit_widget.switch_to_item_delete()
+			self.selected_secondary_key = clicked_button_key
 			window.background_instruction.hide()
 
-		elif clicked_button_key == self.selected_key:
-			self.linked_widgets[self.selected_key].close()
-			self.selected_key = ""
+		elif clicked_button_key != self.selected_secondary_key:
+			self.secondary_buttons[self.selected_secondary_key].setChecked(False)
+			match clicked_button_key:
+				case "category_edit" | "property_edit" | "descriptor_edit":
+					self.linked_widgets[self.selected_secondary_key].close()
+					self.linked_widgets[clicked_button_key].open()
+				case "item_add":
+					item_edit_widget.switch_to_item_add()
+				case "item_edit":
+					item_edit_widget.switch_to_item_edit()
+				case "item_delete":
+					item_edit_widget.switch_to_item_delete()
+			self.selected_secondary_key = clicked_button_key
+			window.background_instruction.hide()
+
+		elif clicked_button_key == self.selected_secondary_key:
+			self.secondary_buttons[self.selected_secondary_key].setChecked(False)
+			match clicked_button_key:
+				case "category_edit" | "property_edit" | "descriptor_edit":
+					self.linked_widgets[self.selected_secondary_key].close()
+				case "item_add" | "item_edit" | "item_delete":
+					item_edit_widget.close()
+					item_edit_widget.switch_to_item_delete()
+			self.selected_secondary_key = ""
 			window.background_instruction.show()
-
-		elif clicked_button_key != self.selected_key:
-			self.linked_widgets[self.selected_key].close()
-			self.buttons[self.selected_key].setChecked(False)
-			self.linked_widgets[clicked_button_key].open()
-			self.selected_key = clicked_button_key
-			window.background_instruction.hide()
 
 
 
