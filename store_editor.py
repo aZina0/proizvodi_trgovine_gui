@@ -462,7 +462,8 @@ class CategoryEditWidget(QWidget):
 		self.show()
 
 		for category in database_interaction.get_categories():
-			button = self.list_widget.create_button(category)
+			category_name = category["NAME"]
+			button = self.list_widget.create_button(category_name)
 			button.clicked.connect(self.category_clicked)
 
 
@@ -655,7 +656,8 @@ class PropertyEditWidget(QWidget):
 		self.show()
 
 		for category in database_interaction.get_categories():
-			button = self.category_list_widget.create_button(category)
+			category_name = category["NAME"]
+			button = self.category_list_widget.create_button(category_name)
 			button.clicked.connect(self.category_clicked)
 
 
@@ -691,7 +693,8 @@ class PropertyEditWidget(QWidget):
 			return
 
 		for property in database_interaction.get_properties(self.selected_category):
-			button = self.property_list_widget.create_button(property)
+			property_name = property["NAME"]
+			button = self.property_list_widget.create_button(property_name)
 			button.clicked.connect(self.property_clicked)
 
 
@@ -888,7 +891,8 @@ class DescriptorEditWidget(QWidget):
 		self.show()
 
 		for category in database_interaction.get_categories():
-			button = self.category_list_widget.create_button(category)
+			category_name = category["NAME"]
+			button = self.category_list_widget.create_button(category_name)
 			button.clicked.connect(self.category_clicked)
 
 
@@ -927,7 +931,8 @@ class DescriptorEditWidget(QWidget):
 			return
 
 		for property in database_interaction.get_properties(self.selected_category):
-			button = self.property_list_widget.create_button(property)
+			property_name = property["NAME"]
+			button = self.property_list_widget.create_button(property_name)
 			button.clicked.connect(self.property_clicked)
 
 
@@ -950,7 +955,8 @@ class DescriptorEditWidget(QWidget):
 			return
 
 		for descriptor in database_interaction.get_descriptors(self.selected_category, property):
-			button = self.descriptor_list_widget.create_button(descriptor)
+			descriptor_name = descriptor["NAME"]
+			button = self.descriptor_list_widget.create_button(descriptor_name)
 			button.clicked.connect(self.descriptor_clicked)
 
 

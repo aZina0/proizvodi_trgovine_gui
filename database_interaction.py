@@ -154,10 +154,17 @@ def get_categories():
 		cursor = conn.cursor()
 
 		cursor.execute("""
-			SELECT category.name
+			SELECT *
 			FROM CATEGORIES AS category;
 		""")
-		categories = [i[0] for i in cursor.fetchall()]
+		column_names = [column[0] for column in cursor.description]
+		data = cursor.fetchall()
+
+		for row in data:
+			category = {}
+			for column_name, cell in zip(column_names, row):
+				category[column_name] = cell
+			categories.append(category)
 
 		conn.commit()
 
@@ -260,11 +267,18 @@ def get_properties(category_name):
 		category_id = get_category_id(cursor, category_name)
 
 		cursor.execute(f"""
-			SELECT property.NAME
+			SELECT *
 			FROM PROPERTIES AS property
 			WHERE property.CATEGORY_ID={category_id};
 		""")
-		properties = [i[0] for i in cursor.fetchall()]
+		column_names = [column[0] for column in cursor.description]
+		data = cursor.fetchall()
+
+		for row in data:
+			property = {}
+			for column_name, cell in zip(column_names, row):
+				property[column_name] = cell
+			properties.append(property)
 
 		conn.commit()
 
@@ -371,11 +385,18 @@ def get_descriptors(category_name, property_name):
 		property_id = get_property_id(cursor, category_name, property_name)
 
 		cursor.execute(f"""
-			SELECT descriptor.NAME
+			SELECT *
 			FROM DESCRIPTORS AS descriptor
 			WHERE descriptor.PROPERTY_ID={property_id};
 		""")
-		descriptors = [i[0] for i in cursor.fetchall()]
+		column_names = [column[0] for column in cursor.description]
+		data = cursor.fetchall()
+
+		for row in data:
+			descriptor = {}
+			for column_name, cell in zip(column_names, row):
+				descriptor[column_name] = cell
+			descriptors.append(descriptor)
 
 		conn.commit()
 
