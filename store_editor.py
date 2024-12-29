@@ -282,10 +282,12 @@ class ModeBar(QWidget):
 			self.secondary_widgets[self.selected_primary_key].hide()
 			self.primary_buttons[self.selected_primary_key].setChecked(False)
 
-			if self.selected_secondary_key != "":
+			if self.selected_secondary_key:
 				match self.selected_primary_key:
 					case "categories_properties":
 						self.linked_widgets[self.selected_secondary_key].close()
+					case "items":
+						item_edit_widget.close()
 
 				self.secondary_buttons[self.selected_secondary_key].setChecked(False)
 				self.selected_secondary_key = ""
@@ -296,7 +298,19 @@ class ModeBar(QWidget):
 		elif clicked_button_key == self.selected_primary_key:
 			self.secondary_widgets[self.selected_primary_key].hide()
 			self.primary_buttons[self.selected_primary_key].setChecked(False)
+
+			if self.selected_secondary_key:
+				match self.selected_primary_key:
+					case "categories_properties":
+						self.linked_widgets[self.selected_secondary_key].close()
+					case "items":
+						item_edit_widget.close()
+
+				self.secondary_buttons[self.selected_secondary_key].setChecked(False)
+				self.selected_secondary_key = ""
+
 			self.selected_primary_key = ""
+
 
 
 	def secondary_button_clicked(self):
@@ -311,7 +325,7 @@ class ModeBar(QWidget):
 				case "item_edit":
 					item_edit_widget.switch_to_item_edit()
 				case "item_delete":
-					item_edit_widget.switch_to_item_delete()
+					item_edit_widget.switch_to_item_remove()
 			self.selected_secondary_key = clicked_button_key
 			window.background_instruction.hide()
 
@@ -326,7 +340,7 @@ class ModeBar(QWidget):
 				case "item_edit":
 					item_edit_widget.switch_to_item_edit()
 				case "item_delete":
-					item_edit_widget.switch_to_item_delete()
+					item_edit_widget.switch_to_item_remove()
 			self.selected_secondary_key = clicked_button_key
 			window.background_instruction.hide()
 
@@ -337,7 +351,6 @@ class ModeBar(QWidget):
 					self.linked_widgets[self.selected_secondary_key].close()
 				case "item_add" | "item_edit" | "item_delete":
 					item_edit_widget.close()
-					item_edit_widget.switch_to_item_delete()
 			self.selected_secondary_key = ""
 			window.background_instruction.show()
 
@@ -1028,12 +1041,226 @@ class DescriptorEditWidget(QWidget):
 
 
 
+class ItemEditWidget(QWidget):
+	def __init__(self, parent):
+		super().__init__(parent)
+
+		self.setStyleSheet(
+			"""
+			QPushButton {
+				font-size: 13pt;
+				height: 30;
+			}
+			"""
+		)
+
+		self.list_group = QGroupBox("Proizvodi")
+		self.list_group.setLayout(QVBoxLayout())
+
+		self.list_widget = CustomScrollList(self.list_group)
+		self.list_group.layout().addWidget(self.list_widget)
+
+
+		self.info_group = QGroupBox("Informacije o proizvodu")
+		self.info_group.setLayout(QGridLayout())
+		self.info_group.layout().setColumnStretch(2, 2)
+		self.info_group.layout().setColumnStretch(4, 2)
+		self.spacerH1 = QWidget()
+		self.spacerH1.setFixedWidth(10)
+		self.spacerH2 = QWidget()
+		self.spacerH2.setFixedWidth(10)
+		self.info_group.layout().addWidget(self.spacerH1, 0, 1)
+		self.info_group.layout().addWidget(self.spacerH2, 0, 3)
+
+		self.image_display = QLabel()
+		self.image_display.setStyleSheet(
+			"""
+			QLabel {
+				border: 1px solid black;
+			}
+			"""
+		)
+		self.image_display.setFixedSize(100, 100)
+		self.image_display.setScaledContents(True)
+		pixmap = QPixmap("resources/no_image.png")
+		self.image_display.setPixmap(pixmap)
+		self.info_group.layout().addWidget(self.image_display, 0, 0, 4, 1)
+		self.image_button = QPushButton("Učitaj sliku")
+		self.image_button.setStyleSheet(
+			"""
+			QPushButton {
+				font-size: 9pt;
+				height: 18;
+			}
+			"""
+		)
+		self.info_group.layout().addWidget(self.image_button, 4, 0)
+
+		self.item_category_label = QLabel("Kategorija")
+		self.info_group.layout().addWidget(self.item_category_label, 0, 4)
+		self.item_category_edit = QComboBox()
+		self.info_group.layout().addWidget(self.item_category_edit, 1, 4)
+
+		self.item_property_label = QLabel("Svojstva")
+		self.info_group.layout().addWidget(self.item_property_label, 2, 4)
+		self.item_property_edit = QWidget()
+		self.info_group.layout().addWidget(self.item_property_edit, 3, 4)
+
+		self.item_name_label = QLabel("Naziv")
+		self.info_group.layout().addWidget(self.item_name_label, 0, 2)
+		self.item_name_edit = QPlainTextEdit()
+		self.info_group.layout().addWidget(self.item_name_edit, 1, 2, 3, 1)
+
+		self.item_description_label = QLabel("Opis")
+		self.info_group.layout().addWidget(self.item_description_label, 5, 0, 1, 3)
+		self.item_description_edit = QPlainTextEdit()
+		self.info_group.layout().addWidget(self.item_description_edit, 6, 0, 1, 3)
+
+
+		self.add_button = QPushButton("Dodaj")
+		self.add_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #008900;
+			}
+
+			QPushButton::disabled {
+				background-color: #005600;
+				color: #2D4F2D;
+			}
+			"""
+		)
+		self.add_button.clicked.connect(self.add_button_clicked)
+		self.info_group.layout().addWidget(self.add_button, 7, 4)
+
+		self.edit_button = QPushButton("Primijeni izmjene")
+		self.edit_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #666666;
+			}
+
+			QPushButton::disabled {
+				background-color: #474747;
+				color: #727272;
+			}
+			"""
+		)
+		self.edit_button.clicked.connect(self.edit_button_clicked)
+		self.info_group.layout().addWidget(self.edit_button, 7, 4)
+
+		self.remove_button = QPushButton("Izbriši")
+		self.remove_button.setStyleSheet(
+			"""
+			QPushButton {
+				background-color: #890000;
+			}
+
+			QPushButton::disabled {
+				background-color: #560000;
+				color: #895959;
+			}
+			"""
+		)
+		self.remove_button.clicked.connect(self.remove_button_clicked)
+		self.info_group.layout().addWidget(self.remove_button, 7, 4)
+
+
+
+
+
+		layout = QGridLayout()
+		layout.setColumnStretch(0, 2)
+		layout.setColumnStretch(1, 5)
+		layout.addWidget(self.list_group, 0, 0)
+		layout.addWidget(self.info_group, 0, 1)
+		self.setLayout(layout)
+
+		self.close()
+
+
+	def close(self):
+		self.hide()
+
+
+	def switch_to_item_add(self):
+		self.show()
+
+		self.edit_button.hide()
+		self.remove_button.hide()
+		self.add_button.show()
+
+		self.image_display.setDisabled(False)
+		self.image_button.setDisabled(False)
+		self.item_name_label.setDisabled(False)
+		self.item_name_edit.setDisabled(False)
+		self.item_description_label.setDisabled(False)
+		self.item_description_edit.setDisabled(False)
+		self.item_category_label.setDisabled(False)
+		self.item_category_edit.setDisabled(False)
+
+		self.info_group.setTitle("Dodaj proizvod")
+		self.item_name_edit.setPlaceholderText("naziv novog proizvoda")
+
+
+	def switch_to_item_edit(self):
+		self.show()
+
+		self.add_button.hide()
+		self.remove_button.hide()
+		self.edit_button.show()
+
+		self.image_display.setDisabled(False)
+		self.image_button.setDisabled(False)
+		self.item_name_label.setDisabled(False)
+		self.item_name_edit.setDisabled(False)
+		self.item_description_label.setDisabled(False)
+		self.item_description_edit.setDisabled(False)
+		self.item_category_label.setDisabled(False)
+		self.item_category_edit.setDisabled(False)
+
+		self.info_group.setTitle("Izmijeni detalje proizvoda")
+		self.item_name_edit.setPlaceholderText("novi naziv proizvoda")
+
+
+	def switch_to_item_remove(self):
+		self.show()
+
+		self.edit_button.hide()
+		self.add_button.hide()
+		self.remove_button.show()
+
+		self.image_display.setDisabled(True)
+		self.image_button.setDisabled(True)
+		self.item_name_label.setDisabled(True)
+		self.item_name_edit.setDisabled(True)
+		self.item_description_label.setDisabled(True)
+		self.item_description_edit.setDisabled(True)
+		self.item_category_label.setDisabled(True)
+		self.item_category_edit.setDisabled(True)
+
+		self.info_group.setTitle("Izbriši proizvod")
+
+
+	def add_button_clicked(self):
+		pass
+
+
+	def edit_button_clicked(self):
+		pass
+
+
+	def remove_button_clicked(self):
+		pass
+
+
+
 
 window = Window()
 category_edit_widget = CategoryEditWidget(window)
 property_edit_widget = PropertyEditWidget(window)
 descriptor_edit_widget = DescriptorEditWidget(window)
-item_edit_widget = PropertyEditWidget(window)
+item_edit_widget = ItemEditWidget(window)
 mode_bar = ModeBar(window)
 
 window.base_widget.layout().addWidget(mode_bar, 0, 0)
