@@ -1082,7 +1082,7 @@ class ItemEditWidget(QWidget):
 		)
 		self.image_display.setFixedSize(100, 100)
 		self.image_display.setScaledContents(True)
-		pixmap = QPixmap("resources/no_image.png")
+		pixmap = QPixmap("resources/item_images/no_image.png")
 		self.image_display.setPixmap(pixmap)
 		self.info_group.layout().addWidget(self.image_display, 0, 0, 4, 1)
 		self.image_button = QPushButton("Učitaj sliku")

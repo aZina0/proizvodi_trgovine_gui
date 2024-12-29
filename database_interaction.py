@@ -23,7 +23,7 @@ def get_property_id(cursor, category_name, property_name):
 
 	cursor.execute(f"""
 		SELECT property.ID FROM PROPERTIES AS property
-		WHERE property.CATEGORY_ID="{category_id}"
+		WHERE property.CATEGORY_ID={category_id}
 		and property.NAME="{property_name}";
 	""")
 	return cursor.fetchone()[0]
@@ -78,10 +78,9 @@ def initialize():
 		add_descriptor("odjeća", "materijal", "pamuk")
 		add_descriptor("odjeća", "materijal", "poliester")
 
-		# Umetni specificna svojstva za spol (muski, zenski, unisex)
+		# Umetni specificna svojstva za spol (muski, zenski)
 		add_descriptor("odjeća", "spol", "muški")
 		add_descriptor("odjeća", "spol", "ženski")
-		add_descriptor("odjeća", "spol", "unisex")
 
 		# Umetni specificna svojstva za vrstu pica (gazirano, alkoholno)
 		add_descriptor("piće", "vrsta", "gazirano")
@@ -90,6 +89,61 @@ def initialize():
 		# Umetni specificna svojstva za ambalazu (boca, tetrapak)
 		add_descriptor("piće", "ambalaža", "boca")
 		add_descriptor("piće", "ambalaža", "tetrapak")
+
+
+
+		cursor.execute("""
+			CREATE TABLE ITEMS
+			(ID INTEGER PRIMARY KEY, NAME VARCHAR, CATEGORY_ID INT, IMAGE VARCHAR, DETAILS VARCHAR);
+		""")
+		conn.commit()
+
+		cursor.execute("""
+			CREATE TABLE ITEM_DESCRIPTORS
+			(ITEM_ID INT, DESCRIPTOR_ID INT);
+		""")
+		conn.commit()
+
+
+		add_item(
+			name="Nike WOW hlače",
+			category_name="odjeća",
+			details="Ove hlače su uistinu WOW.",
+			descriptor_names=["crna", "crvena", "pamuk", "muški"]
+		)
+		add_item(
+			name="Adidas majica sa kapuljačom DELUXE",
+			category_name="odjeća",
+			details="Ova bijela unisex majica ima kapuljaču. Baš je DELUXE",
+			descriptor_names=["bijela", "poliester", "muški", "ženski"]
+		)
+		add_item(
+			name="UMBRO kapa",
+			category_name="odjeća",
+			details="Ova kapa se nosi na glavi.",
+		)
+
+		add_item(
+			name="Z bregov Trajno mlijeko 2,8% m.m. 1L",
+			category_name="piće",
+			details="Sterilizirano, homogenizirano mlijeko s 2,8% mliječne masti.",
+			descriptor_names=["tetrapak"]
+		)
+		add_item(
+			name="Coca Cola 2 l",
+			category_name="piće",
+			details=(
+				"Coca-Cola je najpopularnije i najprodavanije bezalkoholno piće u povijesti, "
+				"kao i jedan od najprepoznatljivijih brendova na svijetu."
+				"Kreirao ga je dr. John S. Pemberton 1886. godine u Atlanti, država Georgia."
+				"U početku se točio kao mješavina Coca-Cola sirupa i gazirane vode u apoteci "
+				"'Jacob's Pharmacy'. Coca-Cola napitak je patentiran 1887. godine, registriran "
+				"kao zaštitni znak 1893., a do 1895. godine nalazi se u prodaji širom SAD-a."
+				"Originalni okus. Odličan okus. Osvježavajuće. Odlično ide uz hranu."
+				"Podiže raspoloženje."
+			),
+			descriptor_names=["gazirano", "boca"]
+		)
 
 
 
@@ -409,6 +463,28 @@ def remove_descriptor(category_name, property_name, descriptor_name):
 			FROM DESCRIPTORS AS descriptor
 			WHERE descriptor.NAME="{descriptor_name}"
 			AND descriptor.PROPERTY_ID={property_id};
+		""")
+
+		conn.commit()
+
+
+
+def add_item(
+	name,
+	category_name,
+	image = "",
+	details = "",
+	descriptor_names = []
+):
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		category_id = get_category_id(cursor, category_name)
+
+		cursor.execute(f"""
+			INSERT INTO ITEMS (NAME, CATEGORY_ID, IMAGE, DETAILS)
+			VALUES ("{name}", {category_id}, "{image}", "{details}");
 		""")
 
 		conn.commit()
