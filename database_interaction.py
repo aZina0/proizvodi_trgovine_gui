@@ -39,15 +39,10 @@ def initialize():
 			CREATE TABLE CATEGORIES
 			(ID INTEGER PRIMARY KEY, NAME VARCHAR);
 		""")
+		conn.commit()
 
-		cursor.execute("""
-			INSERT INTO CATEGORIES (NAME)
-			VALUES ("odjeća");
-		""")
-		cursor.execute("""
-			INSERT INTO CATEGORIES (NAME)
-			VALUES ("piće");
-		""")
+		add_category("odjeća")
+		add_category("piće")
 
 
 		# Napravi tablicu grupa svojstava
@@ -55,32 +50,16 @@ def initialize():
 			CREATE TABLE PROPERTIES
 			(ID INTEGER PRIMARY KEY, NAME VARCHAR, CATEGORY_ID INT);
 		""")
+		conn.commit()
 
 		# Umetni grupe svojstava za odjecu (boja, materijal, spol)
-		odjeca_category_id = get_category_id(cursor, "odjeća")
-		cursor.execute(f"""
-			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
-			VALUES ("boja", {odjeca_category_id});
-		""")
-		cursor.execute(f"""
-			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
-			VALUES ("materijal", {odjeca_category_id});
-		""")
-		cursor.execute(f"""
-			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
-			VALUES ("spol", {odjeca_category_id});
-		""")
+		add_property("odjeća", "boja")
+		add_property("odjeća", "materijal")
+		add_property("odjeća", "spol")
 
 		# Umetni grupe svojstava za pica (vrsta, ambalaza)
-		pice_category_id = get_category_id(cursor, "piće")
-		cursor.execute(f"""
-			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
-			VALUES ("vrsta", {pice_category_id});
-		""")
-		cursor.execute(f"""
-			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
-			VALUES ("ambalaža", {pice_category_id});
-		""")
+		add_property("piće", "vrsta")
+		add_property("piće", "ambalaža")
 
 
 		# Napravi tablicu specificnih svojstava
@@ -88,71 +67,30 @@ def initialize():
 			CREATE TABLE DESCRIPTORS
 			(ID INTEGER PRIMARY KEY, NAME VARCHAR, PROPERTY_ID INT);
 		""")
+		conn.commit()
 
 		# Umetni specificna svojstva za boju (crvena, crna, bijela)
-		boja_property_id = get_property_id(cursor, "odjeća", "boja")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("crvena", {boja_property_id});
-		""")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("crna", {boja_property_id});
-		""")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("bijela", {boja_property_id});
-		""")
+		add_descriptor("odjeća", "boja", "crvena")
+		add_descriptor("odjeća", "boja", "crna")
+		add_descriptor("odjeća", "boja", "bijela")
 
 		# Umetni specificna svojstva za materijal (pamuk, poliester)
-		materijal_property_id = get_property_id(cursor, "odjeća", "materijal")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("pamuk", {materijal_property_id});
-		""")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("poliester", {materijal_property_id});
-		""")
+		add_descriptor("odjeća", "materijal", "pamuk")
+		add_descriptor("odjeća", "materijal", "poliester")
 
 		# Umetni specificna svojstva za spol (muski, zenski, unisex)
-		spol_property_id = get_property_id(cursor, "odjeća", "spol")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("muški", {spol_property_id});
-		""")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("ženski", {spol_property_id});
-		""")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("unisex", {spol_property_id});
-		""")
+		add_descriptor("odjeća", "spol", "muški")
+		add_descriptor("odjeća", "spol", "ženski")
+		add_descriptor("odjeća", "spol", "unisex")
 
 		# Umetni specificna svojstva za vrstu pica (gazirano, alkoholno)
-		vrsta_pica_property_id = get_property_id(cursor, "piće", "vrsta")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("gazirano", {vrsta_pica_property_id});
-		""")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("alkoholno", {vrsta_pica_property_id});
-		""")
+		add_descriptor("piće", "vrsta", "gazirano")
+		add_descriptor("piće", "vrsta", "alkoholno")
 
 		# Umetni specificna svojstva za ambalazu (boca, tetrapak)
-		ambalaza_property_id = get_property_id(cursor, "piće", "ambalaža")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("boca", {ambalaza_property_id});
-		""")
-		cursor.execute(f"""
-			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("tetrapak", {ambalaza_property_id});
-		""")
+		add_descriptor("piće", "ambalaža", "boca")
+		add_descriptor("piće", "ambalaža", "tetrapak")
 
-		conn.commit()
 
 
 def get_categories():
