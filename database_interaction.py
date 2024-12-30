@@ -29,6 +29,22 @@ def get_property_id(cursor, category_name, property_name):
 	return cursor.fetchone()[0]
 
 
+def get_descriptor_id(cursor, category_name, property_name, descriptor_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+	descriptor_name = descriptor_name.lower()
+
+	property_id = get_property_id(cursor, category_name, property_name)
+
+	cursor.execute(f"""
+		SELECT descriptor.ID FROM DESCRIPTORS AS descriptor
+		WHERE descriptor.PROPERTY_ID={property_id}
+		and descriptor.NAME="{descriptor_name}";
+	""")
+
+	return cursor.fetchone()[0]
+
+
 
 def initialize():
 	with sqlite3.connect(database_filename) as conn:
@@ -109,13 +125,23 @@ def initialize():
 			name="Nike WOW hlače",
 			category_name="odjeća",
 			details="Ove hlače su uistinu WOW.",
-			descriptor_names=["crna", "crvena", "pamuk", "muški"]
+			properties_descriptors=[
+				("boja", "crna"),
+				("boja", "crvena"),
+				("materijal", "pamuk"),
+				("spol", "muški"),
+			]
 		)
 		add_item(
 			name="Adidas majica sa kapuljačom DELUXE",
 			category_name="odjeća",
 			details="Ova bijela unisex majica ima kapuljaču. Baš je DELUXE",
-			descriptor_names=["bijela", "poliester", "muški", "ženski"]
+			properties_descriptors=[
+				("boja", "bijela"),
+				("materijal", "poliester"),
+				("spol", "muški"),
+				("spol", "ženski"),
+			]
 		)
 		add_item(
 			name="UMBRO kapa",
@@ -127,7 +153,9 @@ def initialize():
 			name="Z bregov Trajno mlijeko 2,8% m.m. 1L",
 			category_name="piće",
 			details="Sterilizirano, homogenizirano mlijeko s 2,8% mliječne masti.",
-			descriptor_names=["tetrapak"]
+			properties_descriptors=[
+				("ambalaža", "tetrapak"),
+			]
 		)
 		add_item(
 			name="Coca Cola 2 l",
@@ -142,7 +170,10 @@ def initialize():
 				"Originalni okus. Odličan okus. Osvježavajuće. Odlično ide uz hranu."
 				"Podiže raspoloženje."
 			),
-			descriptor_names=["gazirano", "boca"]
+			properties_descriptors=[
+				("vrsta", "gazirano"),
+				("ambalaža", "boca"),
+			]
 		)
 
 
@@ -490,14 +521,39 @@ def remove_descriptor(category_name, property_name, descriptor_name):
 
 
 
+def get_items():
+	items = []
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		cursor.execute(f"""
+			SELECT *
+			FROM ITEMS;
+		""")
+		column_names = [column[0] for column in cursor.description]
+		data = cursor.fetchall()
+
+		for row in data:
+			item = {}
+			for column_name, cell in zip(column_names, row):
+				item[column_name] = cell
+			items.append(item)
+
+		conn.commit()
+
+	return items
+
+
 def add_item(
 	name,
 	category_name,
 	image = "",
 	details = "",
-	descriptor_names = []
+	properties_descriptors = []
 ):
 
+	item_id = -1
 	with sqlite3.connect(database_filename) as conn:
 		cursor = conn.cursor()
 
@@ -505,7 +561,26 @@ def add_item(
 
 		cursor.execute(f"""
 			INSERT INTO ITEMS (NAME, CATEGORY_ID, IMAGE, DETAILS)
-			VALUES ("{name}", {category_id}, "{image}", "{details}");
+			VALUES ("{name}", {category_id}, "{image}", "{details}")
+			RETURNING ID;
 		""")
+		item_id = cursor.fetchone()[0]
+
+		for property_descriptor in properties_descriptors:
+			property_name = property_descriptor[0]
+			descriptor_name = property_descriptor[1]
+			descriptor_id = get_descriptor_id(
+				cursor,
+				category_name,
+				property_name,
+				descriptor_name
+			)
+
+			cursor.execute(f"""
+				INSERT INTO ITEM_DESCRIPTORS (ITEM_ID, DESCRIPTOR_ID)
+				VALUES ({item_id}, {descriptor_id})
+			""")
 
 		conn.commit()
+
+	return item_id

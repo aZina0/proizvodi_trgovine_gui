@@ -73,7 +73,7 @@ class CustomScrollList(QScrollArea):
 		self.base_widget.setLayout(QVBoxLayout())
 		self.base_widget.layout().setContentsMargins(0, 0, 0, 0)
 		self.base_widget.layout().setSpacing(0)
-		self.base_widget.layout().setSizeConstraint(QLayout.SetMaximumSize)
+		self.base_widget.layout().setSizeConstraint(QLayout.SetMinAndMaxSize)
 		self.setWidget(self.base_widget)
 		self.setWidgetResizable(True)
 
@@ -1173,8 +1173,6 @@ class ItemEditWidget(QWidget):
 
 
 
-
-
 		layout = QGridLayout()
 		layout.setColumnStretch(0, 2)
 		layout.setColumnStretch(1, 5)
@@ -1182,7 +1180,19 @@ class ItemEditWidget(QWidget):
 		layout.addWidget(self.info_group, 0, 1)
 		self.setLayout(layout)
 
+		self.reset_item_list()
 		self.close()
+
+
+
+	def reset_item_list(self):
+		self.list_widget.delete_all_buttons()
+
+		for item in database_interaction.get_items():
+			print(item["NAME"])
+			button = self.list_widget.create_button(item["NAME"])
+			button.setProperty("id", item["ID"])
+			button.clicked.connect(self.item_clicked)
 
 
 	def close(self):
@@ -1246,6 +1256,10 @@ class ItemEditWidget(QWidget):
 		self.item_category_edit.setDisabled(True)
 
 		self.info_group.setTitle("Izbriši proizvod")
+
+
+	def item_clicked(self):
+		pass
 
 
 	def add_button_clicked(self):
