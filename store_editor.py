@@ -120,6 +120,10 @@ class CustomScrollList(QScrollArea):
 			self.delete_button(button)
 
 
+	def unselect_all_buttons(self):
+		for button_text in self.buttons:
+			self.buttons[button_text].setChecked(False)
+
 
 
 
@@ -1072,11 +1076,14 @@ class ItemEditWidget(QWidget):
 		self.info_group.layout().setColumnStretch(2, 2)
 		self.info_group.layout().setColumnStretch(4, 2)
 		self.spacerH1 = QWidget()
-		self.spacerH1.setFixedWidth(10)
+		self.spacerH1.setFixedWidth(15)
 		self.spacerH2 = QWidget()
-		self.spacerH2.setFixedWidth(10)
+		self.spacerH2.setFixedWidth(15)
+		self.spacerV1 = QWidget()
+		self.spacerV1.setFixedHeight(15)
 		self.info_group.layout().addWidget(self.spacerH1, 0, 1)
 		self.info_group.layout().addWidget(self.spacerH2, 0, 3)
+		self.info_group.layout().addWidget(self.spacerV1, 5, 0)
 
 		self.image_display = QLabel()
 		self.image_display.setStyleSheet(
@@ -1118,9 +1125,9 @@ class ItemEditWidget(QWidget):
 		self.info_group.layout().addWidget(self.item_name_edit, 1, 2, 3, 1)
 
 		self.item_description_label = QLabel("Opis")
-		self.info_group.layout().addWidget(self.item_description_label, 5, 0, 1, 3)
+		self.info_group.layout().addWidget(self.item_description_label, 6, 0, 1, 3)
 		self.item_description_edit = QPlainTextEdit()
-		self.info_group.layout().addWidget(self.item_description_edit, 6, 0, 1, 3)
+		self.info_group.layout().addWidget(self.item_description_edit, 7, 0, 2, 3)
 
 
 		self.add_button = QPushButton("Dodaj")
@@ -1137,7 +1144,7 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.add_button.clicked.connect(self.add_button_clicked)
-		self.info_group.layout().addWidget(self.add_button, 7, 4)
+		self.info_group.layout().addWidget(self.add_button, 8, 4)
 
 		self.edit_button = QPushButton("Primijeni izmjene")
 		self.edit_button.setStyleSheet(
@@ -1153,7 +1160,7 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.edit_button.clicked.connect(self.edit_button_clicked)
-		self.info_group.layout().addWidget(self.edit_button, 7, 4)
+		self.info_group.layout().addWidget(self.edit_button, 8, 4)
 
 		self.remove_button = QPushButton("Izbriši")
 		self.remove_button.setStyleSheet(
@@ -1169,7 +1176,7 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.remove_button.clicked.connect(self.remove_button_clicked)
-		self.info_group.layout().addWidget(self.remove_button, 7, 4)
+		self.info_group.layout().addWidget(self.remove_button, 8, 4)
 
 
 
@@ -1183,29 +1190,56 @@ class ItemEditWidget(QWidget):
 		self.reset_item_list()
 		self.close()
 
+		self.selected_item_id = -1
 
 
 	def reset_item_list(self):
 		self.list_widget.delete_all_buttons()
 
 		for item in database_interaction.get_items():
-			print(item["NAME"])
 			button = self.list_widget.create_button(item["NAME"])
 			button.setProperty("id", item["ID"])
 			button.clicked.connect(self.item_clicked)
+
+
+	def open(self):
+		self.update_category_list()
+		self.show()
 
 
 	def close(self):
 		self.hide()
 
 
+	def update_category_list(self):
+		while self.item_category_edit.count() > 0:
+			self.item_category_edit.removeItem(0)
+
+		for category in database_interaction.get_categories():
+			category_name = category["NAME"]
+			self.item_category_edit.addItem(category_name)
+
+
 	def switch_to_item_add(self):
-		self.show()
+		self.open()
+		self.info_group.setTitle("Dodaj proizvod")
 
 		self.edit_button.hide()
 		self.remove_button.hide()
 		self.add_button.show()
 
+		# Unselectaj odprije izabrani proizvod s liste
+		self.list_widget.unselect_all_buttons()
+		self.selected_item_id = -1
+
+		# Sakrij listu s proizvodima
+		self.list_group.hide()
+		self.layout().setColumnStretch(0, 0)
+
+		# Izbrisi sve info proizvoda iz input elemenata
+		self.set_item_info()
+
+		# Omoguci interakciju s info elementima
 		self.image_display.setDisabled(False)
 		self.image_button.setDisabled(False)
 		self.item_name_label.setDisabled(False)
@@ -1215,17 +1249,27 @@ class ItemEditWidget(QWidget):
 		self.item_category_label.setDisabled(False)
 		self.item_category_edit.setDisabled(False)
 
-		self.info_group.setTitle("Dodaj proizvod")
-		self.item_name_edit.setPlaceholderText("naziv novog proizvoda")
-
 
 	def switch_to_item_edit(self):
-		self.show()
+		self.open()
+		self.info_group.setTitle("Izmijeni detalje proizvoda")
 
 		self.add_button.hide()
 		self.remove_button.hide()
 		self.edit_button.show()
 
+		# Unselectaj odprije izabrani proizvod s liste
+		self.list_widget.unselect_all_buttons()
+		self.selected_item_id = -1
+
+		# Prikazi listu s proizvodima
+		self.list_group.show()
+		self.layout().setColumnStretch(0, 2)
+
+		# Izbrisi sve info proizvoda iz input elemenata
+		self.set_item_info()
+
+		# Omoguci interakciju s info elementima
 		self.image_display.setDisabled(False)
 		self.image_button.setDisabled(False)
 		self.item_name_label.setDisabled(False)
@@ -1235,17 +1279,27 @@ class ItemEditWidget(QWidget):
 		self.item_category_label.setDisabled(False)
 		self.item_category_edit.setDisabled(False)
 
-		self.info_group.setTitle("Izmijeni detalje proizvoda")
-		self.item_name_edit.setPlaceholderText("novi naziv proizvoda")
-
 
 	def switch_to_item_remove(self):
-		self.show()
+		self.open()
+		self.info_group.setTitle("Izbriši proizvod")
 
 		self.edit_button.hide()
 		self.add_button.hide()
 		self.remove_button.show()
 
+		# Unselectaj odprije izabrani proizvod s liste
+		self.list_widget.unselect_all_buttons()
+		self.selected_item_id = -1
+
+		# Prikazi listu s proizvodima
+		self.list_group.show()
+		self.layout().setColumnStretch(0, 2)
+
+		# Izbrisi sve info proizvoda iz input elemenata
+		self.set_item_info()
+
+		# Onemoguci interakciju s info elementima
 		self.image_display.setDisabled(True)
 		self.image_button.setDisabled(True)
 		self.item_name_label.setDisabled(True)
@@ -1255,11 +1309,40 @@ class ItemEditWidget(QWidget):
 		self.item_category_label.setDisabled(True)
 		self.item_category_edit.setDisabled(True)
 
-		self.info_group.setTitle("Izbriši proizvod")
-
 
 	def item_clicked(self):
-		pass
+		clicked_item_id = self.sender().property("id")
+
+		# Ako vec nije bio izabran proizvod ili je drugaciji od kliknutog,
+		# izaberi kliknutog
+		if self.selected_item_id == -1 or self.selected_item_id != clicked_item_id:
+			self.set_item_info(clicked_item_id)
+			self.selected_item_id = clicked_item_id
+		# Ako je vec izabrani proizvod isti kao kliknuti, unselectaj ga
+		elif self.selected_item_id == clicked_item_id:
+			self.list_widget.unselect_all_buttons()
+			self.set_item_info()
+			self.selected_item_id = -1
+
+
+	def set_item_info(self, item_id = "undefined"):
+		# Ako nije definiran item_id, izbrisi info
+		if item_id == "undefined":
+			self.image_display.setPixmap(QPixmap())
+			self.item_name_edit.setPlainText("")
+			self.item_description_edit.setPlainText("")
+		# Ako je definiran item_id, uzmi informacije iz baze podataka i popuni polja
+		else:
+			item = database_interaction.get_item(item_id)
+
+			if item['IMAGE']:
+				pixmap = QPixmap(f"resources/item_images/{item['IMAGE']}")
+			else:
+				pixmap = QPixmap(f"resources/item_images/no_image.png")
+			self.image_display.setPixmap(pixmap)
+			self.item_name_edit.setPlainText(item["NAME"])
+			self.item_description_edit.setPlainText(item["DETAILS"])
+
 
 
 	def add_button_clicked(self):

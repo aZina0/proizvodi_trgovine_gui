@@ -160,15 +160,16 @@ def initialize():
 		add_item(
 			name="Coca Cola 2 l",
 			category_name="piće",
+			image="coca_cola.jpg",
 			details=(
 				"Coca-Cola je najpopularnije i najprodavanije bezalkoholno piće u povijesti, "
-				"kao i jedan od najprepoznatljivijih brendova na svijetu."
-				"Kreirao ga je dr. John S. Pemberton 1886. godine u Atlanti, država Georgia."
+				"kao i jedan od najprepoznatljivijih brendova na svijetu. "
+				"Kreirao ga je dr. John S. Pemberton 1886. godine u Atlanti, država Georgia. "
 				"U početku se točio kao mješavina Coca-Cola sirupa i gazirane vode u apoteci "
 				"'Jacob's Pharmacy'. Coca-Cola napitak je patentiran 1887. godine, registriran "
-				"kao zaštitni znak 1893., a do 1895. godine nalazi se u prodaji širom SAD-a."
-				"Originalni okus. Odličan okus. Osvježavajuće. Odlično ide uz hranu."
-				"Podiže raspoloženje."
+				"kao zaštitni znak 1893., a do 1895. godine nalazi se u prodaji širom SAD-a. "
+				"Originalni okus. Odličan okus. Osvježavajuće. Odlično ide uz hranu. "
+				"Podiže raspoloženje. "
 			),
 			properties_descriptors=[
 				("vrsta", "gazirano"),
@@ -543,6 +544,28 @@ def get_items():
 		conn.commit()
 
 	return items
+
+
+def get_item(item_id):
+	item = {}
+
+	with sqlite3.connect(database_filename) as conn:
+		cursor = conn.cursor()
+
+		cursor.execute(f"""
+			SELECT *
+			FROM ITEMS AS item
+			WHERE item.ID={item_id};
+		""")
+		column_names = [column[0] for column in cursor.description]
+		data = cursor.fetchone()
+
+		for column_name, cell in zip(column_names, data):
+			item[column_name] = cell
+
+		conn.commit()
+
+	return item
 
 
 def add_item(
