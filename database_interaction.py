@@ -1,72 +1,126 @@
 import sqlite3
 
 
-database_filename="database.db"
+
+class ConnectionManager():
+	def __init__(self):
+		self.database_filename = "database.db"
+		self.active = False
+		self.connection = None
+		self.level = 0
+
+
+	def __enter__(self):
+		if not self.active:
+			self.connection = sqlite3.connect(self.database_filename)
+			self.active = True
+
+		self.level += 1
+
+
+	def __exit__(self, exception_type, exception_value, traceback):
+		if self.level > 0:
+			self.level -= 1
+
+		if self.level == 0:
+			self.connection.close()
+			self.active = False
+
+
+	def execute(self, query):
+		if not self.active:
+			raise Exception("No active connection.")
+
+		cursor = self.connection.cursor()
+		cursor.execute(query)
+		result = cursor.fetchall()
+		cursor.close()
+		self.connection.commit()
+
+		return result
+
+
+	def execute_and_return_col_names(self, query):
+		if not self.active:
+			raise Exception("No active connection.")
+
+		cursor = self.connection.cursor()
+		cursor.execute(query)
+		result = cursor.fetchall()
+		col_names = [column[0] for column in cursor.description]
+		cursor.close()
+		self.connection.commit()
+
+		return result, col_names
+
+
+connection = ConnectionManager()
 
 
 
-def get_category_id(cursor, category_name):
+
+def get_category_id(category_name):
 	category_name = category_name.lower()
 
-	cursor.execute(f"""
-		SELECT category.ID FROM CATEGORIES AS category
-		WHERE category.NAME="{category_name}";
-	""")
-	return cursor.fetchone()[0]
+	with connection:
+		result = connection.execute(f"""
+			SELECT category.ID FROM CATEGORIES AS category
+			WHERE category.NAME="{category_name}";
+		""")
+
+	return result[0][0]
 
 
-def get_property_id(cursor, category_name, property_name):
+def get_property_id(category_name, property_name):
 	category_name = category_name.lower()
 	property_name = property_name.lower()
 
-	category_id = get_category_id(cursor, category_name)
+	category_id = get_category_id(category_name)
 
-	cursor.execute(f"""
-		SELECT property.ID FROM PROPERTIES AS property
-		WHERE property.CATEGORY_ID={category_id}
-		and property.NAME="{property_name}";
-	""")
-	return cursor.fetchone()[0]
+	with connection:
+		result = connection.execute(f"""
+			SELECT property.ID FROM PROPERTIES AS property
+			WHERE property.CATEGORY_ID={category_id}
+			and property.NAME="{property_name}";
+		""")
+
+	return result[0][0]
 
 
-def get_descriptor_id(cursor, category_name, property_name, descriptor_name):
+def get_descriptor_id(category_name, property_name, descriptor_name):
 	category_name = category_name.lower()
 	property_name = property_name.lower()
 	descriptor_name = descriptor_name.lower()
 
-	property_id = get_property_id(cursor, category_name, property_name)
+	property_id = get_property_id(category_name, property_name)
 
-	cursor.execute(f"""
-		SELECT descriptor.ID FROM DESCRIPTORS AS descriptor
-		WHERE descriptor.PROPERTY_ID={property_id}
-		and descriptor.NAME="{descriptor_name}";
-	""")
+	with connection:
+		result = connection.execute(f"""
+			SELECT descriptor.ID FROM DESCRIPTORS AS descriptor
+			WHERE descriptor.PROPERTY_ID={property_id}
+			and descriptor.NAME="{descriptor_name}";
+		""")
 
-	return cursor.fetchone()[0]
+	return result[0][0]
 
 
 
 def initialize():
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
-
+	with connection:
 		# Napravi tablicu kategorije i umetni nekoliko kategorija
-		cursor.execute("""
+		connection.execute("""
 			CREATE TABLE CATEGORIES
 			(ID INTEGER PRIMARY KEY, NAME VARCHAR);
 		""")
-		conn.commit()
 
 		add_category("odjeća")
 		add_category("piće")
 
-
 		# Napravi tablicu grupa svojstava
-		cursor.execute("""
+		connection.execute("""
 			CREATE TABLE PROPERTIES
 			(ID INTEGER PRIMARY KEY, NAME VARCHAR, CATEGORY_ID INT);
 		""")
-		conn.commit()
 
 		# Umetni grupe svojstava za odjecu (boja, materijal, spol)
 		add_property("odjeća", "boja")
@@ -79,11 +133,10 @@ def initialize():
 
 
 		# Napravi tablicu specificnih svojstava
-		cursor.execute("""
+		connection.execute("""
 			CREATE TABLE DESCRIPTORS
 			(ID INTEGER PRIMARY KEY, NAME VARCHAR, PROPERTY_ID INT);
 		""")
-		conn.commit()
 
 		# Umetni specificna svojstva za boju (crvena, crna, bijela)
 		add_descriptor("odjeća", "boja", "crvena")
@@ -108,17 +161,15 @@ def initialize():
 
 
 
-		cursor.execute("""
+		connection.execute("""
 			CREATE TABLE ITEMS
 			(ID INTEGER PRIMARY KEY, NAME VARCHAR, CATEGORY_ID INT, IMAGE VARCHAR, DETAILS VARCHAR);
 		""")
-		conn.commit()
 
-		cursor.execute("""
+		connection.execute("""
 			CREATE TABLE ITEM_DESCRIPTORS
 			(ITEM_ID INT, DESCRIPTOR_ID INT);
 		""")
-		conn.commit()
 
 
 		add_item(
@@ -182,44 +233,32 @@ def initialize():
 def get_categories():
 	categories = []
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
-
-		cursor.execute("""
+	with connection:
+		result, col_names = connection.execute_and_return_col_names("""
 			SELECT *
 			FROM CATEGORIES AS category;
 		""")
-		column_names = [column[0] for column in cursor.description]
-		data = cursor.fetchall()
 
-		for row in data:
+		for row in result:
 			category = {}
-			for column_name, cell in zip(column_names, row):
+			for column_name, cell in zip(col_names, row):
 				category[column_name] = cell
 			categories.append(category)
-
-		conn.commit()
 
 	return categories
 
 
 def category_exists(category_name):
 	category_name = category_name.lower()
-	categories = []
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
-
-		cursor.execute(f"""
+	with connection:
+		result = connection.execute(f"""
 			SELECT *
 			FROM CATEGORIES AS category
 			WHERE category.NAME="{category_name}";
 		""")
-		categories = [i[0] for i in cursor.fetchall()]
 
-		conn.commit()
-
-	if len(categories) > 0:
+	if len(result) > 0:
 		return True
 	else:
 		return False
@@ -228,64 +267,52 @@ def category_exists(category_name):
 def add_category(category_name):
 	category_name = category_name.lower()
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
-
-		cursor.execute(f"""
+	with connection:
+		connection.execute(f"""
 			INSERT INTO CATEGORIES (NAME)
 			VALUES ("{category_name}");
 		""")
-
-		conn.commit()
 
 
 def rename_category(current_category_name, new_category_name):
 	current_category_name = current_category_name.lower()
 	new_category_name = new_category_name.lower()
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		category_id = get_category_id(current_category_name)
 
-		category_id = get_category_id(cursor, current_category_name)
-
-		cursor.execute(f"""
+		connection.execute(f"""
 			UPDATE CATEGORIES AS category
 			SET NAME="{new_category_name}"
 			WHERE category.ID={category_id};
 		""")
 
-		conn.commit()
-
 
 def remove_category(category_name):
 	category_name = category_name.lower()
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		for property in get_properties(category_name):
+			property_id = get_property_id(category_name, property["NAME"])
 
-		for property_name in get_properties(category_name):
-			property_id = get_property_id(cursor, category_name, property_name)
-
-			cursor.execute(f"""
+			connection.execute(f"""
 				DELETE
 				FROM DESCRIPTORS
 				WHERE PROPERTY_ID={property_id};
 			""")
 
-		category_id = get_category_id(cursor, category_name)
-		cursor.execute(f"""
+		category_id = get_category_id(category_name)
+		connection.execute(f"""
 			DELETE
 			FROM PROPERTIES
 			WHERE CATEGORY_ID={category_id};
 		""")
 
-		cursor.execute(f"""
+		connection.execute(f"""
 			DELETE
 			FROM CATEGORIES
 			WHERE NAME="{category_name}";
 		""")
-
-		conn.commit()
 
 
 
@@ -293,26 +320,20 @@ def get_properties(category_name):
 	category_name = category_name.lower()
 	properties = []
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		category_id = get_category_id(category_name)
 
-		category_id = get_category_id(cursor, category_name)
-
-		cursor.execute(f"""
+		result, col_names = connection.execute_and_return_col_names(f"""
 			SELECT *
 			FROM PROPERTIES AS property
 			WHERE property.CATEGORY_ID={category_id};
 		""")
-		column_names = [column[0] for column in cursor.description]
-		data = cursor.fetchall()
 
-		for row in data:
+		for row in result:
 			property = {}
-			for column_name, cell in zip(column_names, row):
+			for column_name, cell in zip(col_names, row):
 				property[column_name] = cell
 			properties.append(property)
-
-		conn.commit()
 
 	return properties
 
@@ -320,24 +341,18 @@ def get_properties(category_name):
 def property_exists(category_name, property_name):
 	category_name = category_name.lower()
 	property_name = property_name.lower()
-	properties = []
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		category_id = get_category_id(category_name)
 
-		category_id = get_category_id(cursor, category_name)
-
-		cursor.execute(f"""
+		result = connection.execute(f"""
 			SELECT *
 			FROM PROPERTIES AS property
 			WHERE property.NAME="{property_name}"
 			AND property.CATEGORY_ID={category_id};
 		""")
-		properties = [i[0] for i in cursor.fetchall()]
 
-		conn.commit()
-
-	if len(properties) > 0:
+	if len(result) > 0:
 		return True
 	else:
 		return False
@@ -347,17 +362,13 @@ def add_property(category_name, property_name):
 	category_name = category_name.lower()
 	property_name = property_name.lower()
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		category_id = get_category_id(category_name)
 
-		category_id = get_category_id(cursor, category_name)
-
-		cursor.execute(f"""
+		connection.execute(f"""
 			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
 			VALUES ("{property_name}", {category_id});
 		""")
-
-		conn.commit()
 
 
 def rename_property(category_name, current_property_name, new_property_name):
@@ -365,44 +376,36 @@ def rename_property(category_name, current_property_name, new_property_name):
 	current_property_name = current_property_name.lower()
 	new_property_name = new_property_name.lower()
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		category_id = get_category_id(category_name)
 
-		category_id = get_category_id(cursor, category_name)
-
-		cursor.execute(f"""
+		connection.execute(f"""
 			UPDATE PROPERTIES AS property
 			SET NAME="{new_property_name}"
 			WHERE property.NAME="{current_property_name}"
 			AND property.CATEGORY_ID={category_id};
 		""")
 
-		conn.commit()
-
 
 def remove_property(category_name, property_name):
 	category_name = category_name.lower()
 	property_name = property_name.lower()
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
-
-		property_id = get_property_id(cursor, category_name, property_name)
-		cursor.execute(f"""
+	with connection:
+		property_id = get_property_id(category_name, property_name)
+		connection.execute(f"""
 			DELETE
 			FROM DESCRIPTORS
 			WHERE PROPERTY_ID={property_id};
 		""")
 
-		category_id = get_category_id(cursor, category_name)
-		cursor.execute(f"""
+		category_id = get_category_id(category_name)
+		connection.execute(f"""
 			DELETE
 			FROM PROPERTIES AS property
 			WHERE property.NAME="{property_name}"
 			AND property.CATEGORY_ID={category_id};
 		""")
-
-		conn.commit()
 
 
 
@@ -411,26 +414,20 @@ def get_descriptors(category_name, property_name):
 	property_name = property_name.lower()
 	descriptors = []
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		property_id = get_property_id(category_name, property_name)
 
-		property_id = get_property_id(cursor, category_name, property_name)
-
-		cursor.execute(f"""
+		result, col_names = connection.execute_and_return_col_names(f"""
 			SELECT *
 			FROM DESCRIPTORS AS descriptor
 			WHERE descriptor.PROPERTY_ID={property_id};
 		""")
-		column_names = [column[0] for column in cursor.description]
-		data = cursor.fetchall()
 
-		for row in data:
+		for row in result:
 			descriptor = {}
-			for column_name, cell in zip(column_names, row):
+			for column_name, cell in zip(col_names, row):
 				descriptor[column_name] = cell
 			descriptors.append(descriptor)
-
-		conn.commit()
 
 	return descriptors
 
@@ -439,24 +436,18 @@ def descriptor_exists(category_name, property_name, descriptor_name):
 	category_name = category_name.lower()
 	property_name = property_name.lower()
 	descriptor_name = descriptor_name.lower()
-	descriptors = []
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		property_id = get_property_id(category_name, property_name)
 
-		property_id = get_property_id(cursor, category_name, property_name)
-
-		cursor.execute(f"""
+		result = connection.execute(f"""
 			SELECT *
 			FROM DESCRIPTORS AS descriptor
 			WHERE descriptor.NAME="{descriptor_name}"
 			AND descriptor.PROPERTY_ID={property_id};
 		""")
-		descriptors = [i[0] for i in cursor.fetchall()]
 
-		conn.commit()
-
-	if len(descriptors) > 0:
+	if len(result) > 0:
 		return True
 	else:
 		return False
@@ -467,17 +458,13 @@ def add_descriptor(category_name, property_name, descriptor_name):
 	property_name = property_name.lower()
 	descriptor_name = descriptor_name.lower()
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		property_id = get_property_id(category_name, property_name)
 
-		property_id = get_property_id(cursor, category_name, property_name)
-
-		cursor.execute(f"""
+		connection.execute(f"""
 			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
 			VALUES ("{descriptor_name}", {property_id});
 		""")
-
-		conn.commit()
 
 
 def rename_descriptor(category_name, property_name, current_descriptor_name, new_descriptor_name):
@@ -486,19 +473,15 @@ def rename_descriptor(category_name, property_name, current_descriptor_name, new
 	current_descriptor_name = current_descriptor_name.lower()
 	new_descriptor_name = new_descriptor_name.lower()
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		property_id = get_property_id(category_name, property_name)
 
-		property_id = get_property_id(cursor, category_name, property_name)
-
-		cursor.execute(f"""
+		connection.execute(f"""
 			UPDATE DESCRIPTORS AS descriptor
 			SET NAME="{new_descriptor_name}"
 			WHERE descriptor.NAME="{current_descriptor_name}"
 			AND descriptor.PROPERTY_ID={property_id};
 		""")
-
-		conn.commit()
 
 
 def remove_descriptor(category_name, property_name, descriptor_name):
@@ -506,42 +489,32 @@ def remove_descriptor(category_name, property_name, descriptor_name):
 	property_name = property_name.lower()
 	descriptor_name = descriptor_name.lower()
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		property_id = get_property_id(category_name, property_name)
 
-		property_id = get_property_id(cursor, category_name, property_name)
-
-		cursor.execute(f"""
+		connection.execute(f"""
 			DELETE
 			FROM DESCRIPTORS AS descriptor
 			WHERE descriptor.NAME="{descriptor_name}"
 			AND descriptor.PROPERTY_ID={property_id};
 		""")
 
-		conn.commit()
-
 
 
 def get_items():
 	items = []
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
-
-		cursor.execute(f"""
+	with connection:
+		result, col_names = connection.execute_and_return_col_names(f"""
 			SELECT *
 			FROM ITEMS;
 		""")
-		column_names = [column[0] for column in cursor.description]
-		data = cursor.fetchall()
 
-		for row in data:
+		for row in result:
 			item = {}
-			for column_name, cell in zip(column_names, row):
+			for column_name, cell in zip(col_names, row):
 				item[column_name] = cell
 			items.append(item)
-
-		conn.commit()
 
 	return items
 
@@ -549,21 +522,15 @@ def get_items():
 def get_item(item_id):
 	item = {}
 
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
-
-		cursor.execute(f"""
+	with connection:
+		result, col_names = connection.execute_and_return_col_names(f"""
 			SELECT *
 			FROM ITEMS AS item
 			WHERE item.ID={item_id};
 		""")
-		column_names = [column[0] for column in cursor.description]
-		data = cursor.fetchone()
 
-		for column_name, cell in zip(column_names, data):
+		for column_name, cell in zip(col_names, result[0]):
 			item[column_name] = cell
-
-		conn.commit()
 
 	return item
 
@@ -577,33 +544,28 @@ def add_item(
 ):
 
 	item_id = -1
-	with sqlite3.connect(database_filename) as conn:
-		cursor = conn.cursor()
+	with connection:
+		category_id = get_category_id(category_name)
 
-		category_id = get_category_id(cursor, category_name)
-
-		cursor.execute(f"""
+		result = connection.execute(f"""
 			INSERT INTO ITEMS (NAME, CATEGORY_ID, IMAGE, DETAILS)
 			VALUES ("{name}", {category_id}, "{image}", "{details}")
 			RETURNING ID;
 		""")
-		item_id = cursor.fetchone()[0]
+		item_id = result[0][0]
 
 		for property_descriptor in properties_descriptors:
 			property_name = property_descriptor[0]
 			descriptor_name = property_descriptor[1]
 			descriptor_id = get_descriptor_id(
-				cursor,
 				category_name,
 				property_name,
 				descriptor_name
 			)
 
-			cursor.execute(f"""
+			connection.execute(f"""
 				INSERT INTO ITEM_DESCRIPTORS (ITEM_ID, DESCRIPTOR_ID)
 				VALUES ({item_id}, {descriptor_id})
 			""")
-
-		conn.commit()
 
 	return item_id

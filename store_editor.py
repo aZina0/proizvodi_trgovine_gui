@@ -6,7 +6,10 @@ import os
 import database_interaction
 
 
-# os.remove("database.db")
+# Resetiranje baze podataka
+# if os.path.exists("database.db"):
+# 	os.remove("database.db")
+
 # Ako ne postoji baza podataka, napravi novu s nekim pocetnim podatcima
 if not os.path.exists("database.db"):
 	database_interaction.initialize()
@@ -1212,12 +1215,17 @@ class ItemEditWidget(QWidget):
 
 
 	def update_category_list(self):
+		# Izbrisi sve kategorije iz widgeta
 		while self.item_category_edit.count() > 0:
 			self.item_category_edit.removeItem(0)
 
+		# Dodaj iznova nabavljene kategorije u widget
 		for category in database_interaction.get_categories():
 			category_name = category["NAME"]
 			self.item_category_edit.addItem(category_name)
+
+		# Namjesti da nijedna kategorija nije izabrana
+		self.item_category_edit.setCurrentIndex(-1)
 
 
 	def switch_to_item_add(self):
