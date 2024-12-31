@@ -58,53 +58,6 @@ connection = ConnectionManager()
 
 
 
-
-def get_category_id(category_name):
-	category_name = category_name.lower()
-
-	with connection:
-		result = connection.execute(f"""
-			SELECT category.ID FROM CATEGORIES AS category
-			WHERE category.NAME="{category_name}";
-		""")
-
-	return result[0][0]
-
-
-def get_property_id(category_name, property_name):
-	category_name = category_name.lower()
-	property_name = property_name.lower()
-
-	category_id = get_category_id(category_name)
-
-	with connection:
-		result = connection.execute(f"""
-			SELECT property.ID FROM PROPERTIES AS property
-			WHERE property.CATEGORY_ID={category_id}
-			and property.NAME="{property_name}";
-		""")
-
-	return result[0][0]
-
-
-def get_descriptor_id(category_name, property_name, descriptor_name):
-	category_name = category_name.lower()
-	property_name = property_name.lower()
-	descriptor_name = descriptor_name.lower()
-
-	property_id = get_property_id(category_name, property_name)
-
-	with connection:
-		result = connection.execute(f"""
-			SELECT descriptor.ID FROM DESCRIPTORS AS descriptor
-			WHERE descriptor.PROPERTY_ID={property_id}
-			and descriptor.NAME="{descriptor_name}";
-		""")
-
-	return result[0][0]
-
-
-
 def initialize():
 	with connection:
 		# Napravi tablicu kategorije i umetni nekoliko kategorija
@@ -227,6 +180,62 @@ def initialize():
 				("ambalaža", "boca"),
 			]
 		)
+
+
+
+def get_category_id(category_name):
+	category_name = category_name.lower()
+
+	with connection:
+		result = connection.execute(f"""
+			SELECT category.ID FROM CATEGORIES AS category
+			WHERE category.NAME="{category_name}";
+		""")
+
+	return result[0][0]
+
+
+def get_category_name(category_id):
+	with connection:
+		result = connection.execute(f"""
+			SELECT category.NAME FROM CATEGORIES AS category
+			WHERE category.ID={category_id};
+		""")
+
+	return result[0][0]
+
+
+def get_property_id(category_name, property_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+
+	category_id = get_category_id(category_name)
+
+	with connection:
+		result = connection.execute(f"""
+			SELECT property.ID FROM PROPERTIES AS property
+			WHERE property.CATEGORY_ID={category_id}
+			and property.NAME="{property_name}";
+		""")
+
+	return result[0][0]
+
+
+def get_descriptor_id(category_name, property_name, descriptor_name):
+	category_name = category_name.lower()
+	property_name = property_name.lower()
+	descriptor_name = descriptor_name.lower()
+
+	property_id = get_property_id(category_name, property_name)
+
+	with connection:
+		result = connection.execute(f"""
+			SELECT descriptor.ID FROM DESCRIPTORS AS descriptor
+			WHERE descriptor.PROPERTY_ID={property_id}
+			and descriptor.NAME="{descriptor_name}";
+		""")
+
+	return result[0][0]
 
 
 

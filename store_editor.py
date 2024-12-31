@@ -1351,6 +1351,9 @@ class ItemEditWidget(QWidget):
 			self.item_name_edit.setPlainText(item["NAME"])
 			self.item_description_edit.setPlainText(item["DETAILS"])
 
+			category_name = database_interaction.get_category_name(item["CATEGORY_ID"])
+			self.item_category_edit.setCurrentText(category_name)
+
 
 
 	def add_button_clicked(self):
