@@ -68,6 +68,7 @@ def initialize():
 
 		add_category("odjeća")
 		add_category("piće")
+		add_category("ostalo")
 
 		# Napravi tablicu grupa svojstava
 		connection.execute("""

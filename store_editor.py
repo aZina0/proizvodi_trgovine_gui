@@ -1102,6 +1102,7 @@ class ItemEditWidget(QWidget):
 		self.image_display.setPixmap(pixmap)
 		self.info_group.layout().addWidget(self.image_display, 0, 0, 4, 1)
 		self.image_button = QPushButton("Učitaj sliku")
+		self.image_button.clicked.connect(self.load_image_clicked)
 		self.image_button.setStyleSheet(
 			"""
 			QPushButton {
@@ -1112,20 +1113,22 @@ class ItemEditWidget(QWidget):
 		)
 		self.info_group.layout().addWidget(self.image_button, 4, 0)
 
+		self.item_name_label = QLabel("Naziv")
+		self.info_group.layout().addWidget(self.item_name_label, 0, 2)
+		self.item_name_edit = QPlainTextEdit()
+		self.item_name_edit.textChanged.connect(self.item_name_changed)
+		self.info_group.layout().addWidget(self.item_name_edit, 1, 2, 3, 1)
+
 		self.item_category_label = QLabel("Kategorija")
 		self.info_group.layout().addWidget(self.item_category_label, 0, 4)
 		self.item_category_edit = QComboBox()
+		self.item_category_edit.currentTextChanged.connect(self.item_category_changed)
 		self.info_group.layout().addWidget(self.item_category_edit, 1, 4)
 
 		self.item_property_label = QLabel("Svojstva")
 		self.info_group.layout().addWidget(self.item_property_label, 2, 4)
 		self.item_property_edit = QWidget()
 		self.info_group.layout().addWidget(self.item_property_edit, 3, 4)
-
-		self.item_name_label = QLabel("Naziv")
-		self.info_group.layout().addWidget(self.item_name_label, 0, 2)
-		self.item_name_edit = QPlainTextEdit()
-		self.info_group.layout().addWidget(self.item_name_edit, 1, 2, 3, 1)
 
 		self.item_description_label = QLabel("Opis")
 		self.info_group.layout().addWidget(self.item_description_label, 6, 0, 1, 3)
@@ -1354,6 +1357,53 @@ class ItemEditWidget(QWidget):
 			category_name = database_interaction.get_category_name(item["CATEGORY_ID"])
 			self.item_category_edit.setCurrentText(category_name)
 
+
+	def item_name_changed(self):
+		item_name = self.item_name_edit.toPlainText()
+		item_category_name = self.item_category_edit.currentText()
+
+		if item_name and item_category_name:
+			self.add_button.setDisabled(False)
+			self.edit_button.setDisabled(False)
+		else:
+			self.add_button.setDisabled(True)
+			self.edit_button.setDisabled(True)
+
+
+	def item_category_changed(self):
+		item_name = self.item_name_edit.toPlainText()
+		item_category_name = self.item_category_edit.currentText()
+
+		if item_name and item_category_name:
+			self.add_button.setDisabled(False)
+			self.edit_button.setDisabled(False)
+		else:
+			self.add_button.setDisabled(True)
+			self.edit_button.setDisabled(True)
+
+		if item_category_name:
+			self.item_property_label.setDisabled(False)
+			self.item_property_edit.setDisabled(False)
+		else:
+			self.item_property_label.setDisabled(True)
+			self.item_property_edit.setDisabled(True)
+
+
+	def load_image_clicked(self):
+		image_file_absolute_path = QFileDialog.getOpenFileName(
+			self,
+			caption = "Choose image from this directory",
+			dir = "resources/item_images",
+			filter = "Image Files (*.png *.jpg *.bmp)"
+		)[0]
+
+		image_file_name = image_file_absolute_path.split("/")[-1]
+
+		if image_file_name:
+			pixmap = QPixmap(f"resources/item_images/{image_file_name}")
+		else:
+			pixmap = QPixmap(f"resources/item_images/no_image.png")
+		self.image_display.setPixmap(pixmap)
 
 
 	def add_button_clicked(self):
