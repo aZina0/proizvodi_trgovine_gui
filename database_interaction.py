@@ -562,3 +562,18 @@ def get_item_descriptors(item_id):
 			descriptor_ids.append(descriptor[0])
 
 	return descriptor_ids
+
+
+def remove_item(item_id):
+	with connection:
+		connection.execute(f"""
+			DELETE
+			FROM ITEMS
+			WHERE ID={item_id};
+		""")
+
+		connection.execute(f"""
+			DELETE
+			FROM ITEM_DESCRIPTORS
+			WHERE ITEM_ID={item_id};
+		""")

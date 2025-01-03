@@ -1539,6 +1539,9 @@ class ItemEditWidget(QWidget):
 	def remove_button_clicked(self):
 		database_interaction.remove_item(self.selected_item_id)
 
+		self.set_item_info()
+		self.list_widget.delete_button(self.selected_item_id)
+
 
 
 
