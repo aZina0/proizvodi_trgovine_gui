@@ -168,7 +168,9 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 		self.setWidgetResizable(True)
 
 		self.disabled = False
+		self.section_widgets = {}
 		self.checkboxes = {}
+
 
 	def add_section(self, section_name, checkbox_infos):
 		section_button = QToolButton()
@@ -176,6 +178,7 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 		section_button.setText(section_name)
 		section_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 		section_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+		section_button.clicked.connect(self.section_clicked)
 		self.base_widget.layout().addWidget(section_button)
 
 		checkboxes_widget = QWidget()
@@ -183,6 +186,8 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 		checkboxes_widget.layout().setContentsMargins(0, 0, 0, 0)
 		checkboxes_widget.layout().setSpacing(0)
 		checkboxes_widget.layout().setSizeConstraint(QLayout.SetMinAndMaxSize)
+		checkboxes_widget.hide()
+		self.section_widgets[section_name] = checkboxes_widget
 
 		for checkbox_info in checkbox_infos:
 			checkbox_name = checkbox_info["name"]
@@ -204,7 +209,23 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 			self.base_widget.layout().removeWidget(widget)
 			widget.deleteLater()
 
+		self.section_widgets.clear()
 		self.checkboxes.clear()
+
+
+	def section_clicked(self):
+		section_button = self.sender()
+		clicked_section_name = self.sender().text()
+
+		section_widget = self.section_widgets[clicked_section_name]
+		# Ako je sekcija skrivena, prikazi ju i promjeni strelicu
+		if section_widget.isHidden():
+			section_button.setArrowType(Qt.DownArrow)
+			section_widget.show()
+		# Ako je sekcija prikazana, sakrij ju i promjeni strelicu
+		else:
+			section_button.setArrowType(Qt.RightArrow)
+			section_widget.hide()
 
 
 	def setDisabled(self, state):
