@@ -579,3 +579,19 @@ def add_item(
 			""")
 
 	return item_id
+
+
+def get_item_descriptors(item_id):
+	descriptor_ids = []
+
+	with connection:
+		result = connection.execute(f"""
+			SELECT DESCRIPTOR_ID
+			FROM ITEM_DESCRIPTORS
+			WHERE ITEM_ID={item_id};
+		""")
+
+		for descriptor in result:
+			descriptor_ids.append(descriptor[0])
+
+	return descriptor_ids

@@ -53,9 +53,9 @@ app.setStyleSheet(
 
 
 
-class CustomScrollList(QScrollArea):
-	def __init__(self, parent):
-		super().__init__(parent)
+class RadioButtonScrollList(QScrollArea):
+	def __init__(self):
+		super().__init__()
 
 		self.setStyleSheet("""
 			QPushButton {
@@ -129,12 +129,107 @@ class CustomScrollList(QScrollArea):
 
 
 
-
-class Window(QMainWindow):
-
+class FoldableSectionsCheckboxesScrollList(QScrollArea):
 	def __init__(self):
 		super().__init__()
-		self.setMinimumSize(794, 400)
+
+		self.setStyleSheet("""
+			QScrollArea {
+				border: 1px solid black;
+			}
+
+			QToolButton {
+				background-color: #292929;
+				border: 1px solid #393939;
+				font-size: 10pt;
+				text-align: left;
+			}
+
+			QCheckBox::indicator {
+				margin-left: 20px;
+				border: 1px solid gray;
+			}
+
+			QCheckBox::indicator:unchecked {
+				image: url(resources/no_checkmark.png);
+			}
+
+			QCheckBox::indicator:checked {
+				image: url(resources/checkmark.png);
+			}
+		""")
+
+		self.base_widget = QWidget(self)
+		self.base_widget.setLayout(QVBoxLayout())
+		self.base_widget.layout().setContentsMargins(0, 0, 0, 0)
+		self.base_widget.layout().setSpacing(0)
+		self.base_widget.layout().setSizeConstraint(QLayout.SetMinAndMaxSize)
+		self.setWidget(self.base_widget)
+		self.setWidgetResizable(True)
+
+		self.disabled = False
+		self.checkboxes = {}
+
+	def add_section(self, section_name, checkbox_infos):
+		section_button = QToolButton()
+		section_button.setArrowType(Qt.RightArrow)
+		section_button.setText(section_name)
+		section_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+		section_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+		self.base_widget.layout().addWidget(section_button)
+
+		checkboxes_widget = QWidget()
+		checkboxes_widget.setLayout(QVBoxLayout())
+		checkboxes_widget.layout().setContentsMargins(0, 0, 0, 0)
+		checkboxes_widget.layout().setSpacing(0)
+		checkboxes_widget.layout().setSizeConstraint(QLayout.SetMinAndMaxSize)
+
+		for checkbox_info in checkbox_infos:
+			checkbox_name = checkbox_info["name"]
+			checkbox_id = checkbox_info["id"]
+
+			checkbox = QCheckBox(checkbox_name)
+			checkbox.setProperty("id", checkbox_id)
+			if self.disabled:
+				checkbox.setDisabled(True)
+			self.checkboxes[checkbox_id] = checkbox
+			checkboxes_widget.layout().addWidget(checkbox)
+
+		self.base_widget.layout().addWidget(checkboxes_widget)
+
+
+	def clear(self):
+		while self.base_widget.layout().count() > 0:
+			widget = self.base_widget.layout().itemAt(0).widget()
+			self.base_widget.layout().removeWidget(widget)
+			widget.deleteLater()
+
+		self.checkboxes.clear()
+
+
+	def setDisabled(self, state):
+		# Ako disable, samo disableaj interakciju s checkboxevima (dozvoli scrollanje)
+		if state:
+			self.disabled = True
+			super().setDisabled(False)
+			for checkbox in self.checkboxes.values():
+				checkbox.setDisabled(True)
+
+		# Inače ako enable, omogući sve
+		else:
+			self.disabled = False
+			super().setDisabled(False)
+			for checkbox in self.checkboxes.values():
+				checkbox.setDisabled(False)
+
+
+
+
+
+class Window(QMainWindow):
+	def __init__(self):
+		super().__init__()
+		self.setMinimumSize(850, 450)
 		self.setWindowTitle("Uređivač proizvoda/svojstava")
 		self.setWindowIcon(QIcon("resources/settings.png"))
 
@@ -381,7 +476,7 @@ class CategoryEditWidget(QWidget):
 		self.list_group = QGroupBox("Kategorije")
 		self.list_group.setLayout(QVBoxLayout())
 
-		self.list_widget = CustomScrollList(self.list_group)
+		self.list_widget = RadioButtonScrollList()
 		self.list_group.layout().addWidget(self.list_widget)
 
 
@@ -560,14 +655,14 @@ class PropertyEditWidget(QWidget):
 		self.category_list_group = QGroupBox("Kategorije")
 		self.category_list_group.setLayout(QVBoxLayout())
 
-		self.category_list_widget = CustomScrollList(self.category_list_group)
+		self.category_list_widget = RadioButtonScrollList()
 		self.category_list_group.layout().addWidget(self.category_list_widget)
 
 
 		self.property_list_group = QGroupBox("Grupe svojstava")
 		self.property_list_group.setLayout(QVBoxLayout())
 
-		self.property_list_widget = CustomScrollList(self.property_list_group)
+		self.property_list_widget = RadioButtonScrollList()
 		self.property_list_group.layout().addWidget(self.property_list_widget)
 
 
@@ -785,21 +880,21 @@ class DescriptorEditWidget(QWidget):
 		self.category_list_group = QGroupBox("Kategorije")
 		self.category_list_group.setLayout(QVBoxLayout())
 
-		self.category_list_widget = CustomScrollList(self.category_list_group)
+		self.category_list_widget = RadioButtonScrollList()
 		self.category_list_group.layout().addWidget(self.category_list_widget)
 
 
 		self.property_list_group = QGroupBox("Grupe svojstava")
 		self.property_list_group.setLayout(QVBoxLayout())
 
-		self.property_list_widget = CustomScrollList(self.property_list_group)
+		self.property_list_widget = RadioButtonScrollList()
 		self.property_list_group.layout().addWidget(self.property_list_widget)
 
 
 		self.descriptor_list_group = QGroupBox("Svojstva")
 		self.descriptor_list_group.setLayout(QVBoxLayout())
 
-		self.descriptor_list_widget = CustomScrollList(self.descriptor_list_group)
+		self.descriptor_list_widget = RadioButtonScrollList()
 		self.descriptor_list_group.layout().addWidget(self.descriptor_list_widget)
 
 
@@ -1070,7 +1165,7 @@ class ItemEditWidget(QWidget):
 		self.list_group = QGroupBox("Proizvodi")
 		self.list_group.setLayout(QVBoxLayout())
 
-		self.list_widget = CustomScrollList(self.list_group)
+		self.list_widget = RadioButtonScrollList()
 		self.list_group.layout().addWidget(self.list_widget)
 
 
@@ -1078,15 +1173,18 @@ class ItemEditWidget(QWidget):
 		self.info_group.setLayout(QGridLayout())
 		self.info_group.layout().setColumnStretch(2, 2)
 		self.info_group.layout().setColumnStretch(4, 2)
-		self.spacerH1 = QWidget()
-		self.spacerH1.setFixedWidth(15)
-		self.spacerH2 = QWidget()
-		self.spacerH2.setFixedWidth(15)
 		self.spacerV1 = QWidget()
-		self.spacerV1.setFixedHeight(15)
-		self.info_group.layout().addWidget(self.spacerH1, 0, 1)
-		self.info_group.layout().addWidget(self.spacerH2, 0, 3)
-		self.info_group.layout().addWidget(self.spacerV1, 5, 0)
+		self.spacerV1.setFixedWidth(15)
+		self.spacerV2 = QWidget()
+		self.spacerV2.setFixedWidth(15)
+		self.spacerH1 = QWidget()
+		self.spacerH1.setFixedHeight(15)
+		self.spacerH2 = QWidget()
+		self.spacerH2.setFixedHeight(15)
+		self.info_group.layout().addWidget(self.spacerV1, 0, 1)
+		self.info_group.layout().addWidget(self.spacerV2, 0, 3)
+		self.info_group.layout().addWidget(self.spacerH1, 5, 0)
+		self.info_group.layout().addWidget(self.spacerH1, 8, 0)
 
 		self.image_display = QLabel()
 		self.image_display.setStyleSheet(
@@ -1127,13 +1225,13 @@ class ItemEditWidget(QWidget):
 
 		self.item_property_label = QLabel("Svojstva")
 		self.info_group.layout().addWidget(self.item_property_label, 2, 4)
-		self.item_property_edit = QWidget()
-		self.info_group.layout().addWidget(self.item_property_edit, 3, 4)
+		self.item_property_edit = FoldableSectionsCheckboxesScrollList()
+		self.info_group.layout().addWidget(self.item_property_edit, 3, 4, 5, 1)
 
 		self.item_description_label = QLabel("Opis")
 		self.info_group.layout().addWidget(self.item_description_label, 6, 0, 1, 3)
 		self.item_description_edit = QPlainTextEdit()
-		self.info_group.layout().addWidget(self.item_description_edit, 7, 0, 2, 3)
+		self.info_group.layout().addWidget(self.item_description_edit, 7, 0, 3, 3)
 
 
 		self.add_button = QPushButton("Dodaj")
@@ -1150,7 +1248,7 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.add_button.clicked.connect(self.add_button_clicked)
-		self.info_group.layout().addWidget(self.add_button, 8, 4)
+		self.info_group.layout().addWidget(self.add_button, 9, 4)
 
 		self.edit_button = QPushButton("Primijeni izmjene")
 		self.edit_button.setStyleSheet(
@@ -1166,7 +1264,7 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.edit_button.clicked.connect(self.edit_button_clicked)
-		self.info_group.layout().addWidget(self.edit_button, 8, 4)
+		self.info_group.layout().addWidget(self.edit_button, 9, 4)
 
 		self.remove_button = QPushButton("Izbriši")
 		self.remove_button.setStyleSheet(
@@ -1182,13 +1280,13 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.remove_button.clicked.connect(self.remove_button_clicked)
-		self.info_group.layout().addWidget(self.remove_button, 8, 4)
+		self.info_group.layout().addWidget(self.remove_button, 9, 4)
 
 
 
 		layout = QGridLayout()
-		layout.setColumnStretch(0, 2)
-		layout.setColumnStretch(1, 5)
+		layout.setColumnStretch(0, 1)
+		layout.setColumnStretch(1, 4)
 		layout.addWidget(self.list_group, 0, 0)
 		layout.addWidget(self.info_group, 0, 1)
 		self.setLayout(layout)
@@ -1197,6 +1295,7 @@ class ItemEditWidget(QWidget):
 		self.close()
 
 		self.selected_item_id = -1
+		self.selected_mode = ""
 
 
 	def reset_item_list(self):
@@ -1214,7 +1313,21 @@ class ItemEditWidget(QWidget):
 
 
 	def close(self):
+		self.selected_mode = ""
 		self.hide()
+
+
+	def set_info_interaction_state(self, state):
+		self.image_display.setDisabled(not state)
+		self.image_button.setDisabled(not state)
+		self.item_name_label.setDisabled(not state)
+		self.item_name_edit.setDisabled(not state)
+		self.item_description_label.setDisabled(not state)
+		self.item_description_edit.setDisabled(not state)
+		self.item_category_label.setDisabled(not state)
+		self.item_category_edit.setDisabled(not state)
+		self.item_property_label.setDisabled(not state)
+		self.item_property_edit.setDisabled(not state)
 
 
 	def update_category_list(self):
@@ -1225,15 +1338,47 @@ class ItemEditWidget(QWidget):
 		# Dodaj iznova nabavljene kategorije u widget
 		for category in database_interaction.get_categories():
 			category_name = category["NAME"]
-			self.item_category_edit.addItem(category_name)
+			self.item_category_edit.addItem(category_name.capitalize())
 
 		# Namjesti da nijedna kategorija nije izabrana
 		self.item_category_edit.setCurrentIndex(-1)
 
 
+	def update_property_list(self):
+		self.item_property_edit.clear()
+
+		item_category_name = self.item_category_edit.currentText()
+		if not item_category_name:
+			return
+
+		for property in database_interaction.get_properties(item_category_name):
+			property_name = property["NAME"]
+
+			descriptors = []
+
+			for descriptor in database_interaction.get_descriptors(item_category_name, property_name):
+				descriptor_id = descriptor["ID"]
+				descriptor_name = descriptor["NAME"]
+				descriptors.append(
+					{"id": descriptor_id, "name": descriptor_name.capitalize()}
+				)
+
+			self.item_property_edit.add_section(property_name, descriptors)
+
+
+	def update_selected_descriptors(self):
+		for checkbox in self.item_property_edit.checkboxes.values():
+			checkbox.setChecked(False)
+		if self.selected_item_id > -1:
+			selected_item_descriptor_ids = database_interaction.get_item_descriptors(self.selected_item_id)
+			for descriptor_id in selected_item_descriptor_ids:
+				self.item_property_edit.checkboxes[descriptor_id].setChecked(True)
+
+
 	def switch_to_item_add(self):
 		self.open()
 		self.info_group.setTitle("Dodaj proizvod")
+		self.selected_mode = "add"
 
 		self.edit_button.hide()
 		self.remove_button.hide()
@@ -1251,19 +1396,13 @@ class ItemEditWidget(QWidget):
 		self.set_item_info()
 
 		# Omoguci interakciju s info elementima
-		self.image_display.setDisabled(False)
-		self.image_button.setDisabled(False)
-		self.item_name_label.setDisabled(False)
-		self.item_name_edit.setDisabled(False)
-		self.item_description_label.setDisabled(False)
-		self.item_description_edit.setDisabled(False)
-		self.item_category_label.setDisabled(False)
-		self.item_category_edit.setDisabled(False)
+		self.set_info_interaction_state(True)
 
 
 	def switch_to_item_edit(self):
 		self.open()
 		self.info_group.setTitle("Izmijeni detalje proizvoda")
+		self.selected_mode = "edit"
 
 		self.add_button.hide()
 		self.remove_button.hide()
@@ -1280,20 +1419,14 @@ class ItemEditWidget(QWidget):
 		# Izbrisi sve info proizvoda iz input elemenata
 		self.set_item_info()
 
-		# Omoguci interakciju s info elementima
-		self.image_display.setDisabled(False)
-		self.image_button.setDisabled(False)
-		self.item_name_label.setDisabled(False)
-		self.item_name_edit.setDisabled(False)
-		self.item_description_label.setDisabled(False)
-		self.item_description_edit.setDisabled(False)
-		self.item_category_label.setDisabled(False)
-		self.item_category_edit.setDisabled(False)
+		# Onemoguci interakciju s info elementima
+		self.set_info_interaction_state(False)
 
 
 	def switch_to_item_remove(self):
 		self.open()
 		self.info_group.setTitle("Izbriši proizvod")
+		self.selected_mode = "remove"
 
 		self.edit_button.hide()
 		self.add_button.hide()
@@ -1311,29 +1444,7 @@ class ItemEditWidget(QWidget):
 		self.set_item_info()
 
 		# Onemoguci interakciju s info elementima
-		self.image_display.setDisabled(True)
-		self.image_button.setDisabled(True)
-		self.item_name_label.setDisabled(True)
-		self.item_name_edit.setDisabled(True)
-		self.item_description_label.setDisabled(True)
-		self.item_description_edit.setDisabled(True)
-		self.item_category_label.setDisabled(True)
-		self.item_category_edit.setDisabled(True)
-
-
-	def item_clicked(self):
-		clicked_item_id = self.sender().property("id")
-
-		# Ako vec nije bio izabran proizvod ili je drugaciji od kliknutog,
-		# izaberi kliknutog
-		if self.selected_item_id == -1 or self.selected_item_id != clicked_item_id:
-			self.set_item_info(clicked_item_id)
-			self.selected_item_id = clicked_item_id
-		# Ako je vec izabrani proizvod isti kao kliknuti, unselectaj ga
-		elif self.selected_item_id == clicked_item_id:
-			self.list_widget.unselect_all_buttons()
-			self.set_item_info()
-			self.selected_item_id = -1
+		self.set_info_interaction_state(False)
 
 
 	def set_item_info(self, item_id = "undefined"):
@@ -1342,6 +1453,8 @@ class ItemEditWidget(QWidget):
 			self.image_display.setPixmap(QPixmap())
 			self.item_name_edit.setPlainText("")
 			self.item_description_edit.setPlainText("")
+			self.item_category_edit.setCurrentIndex(-1)
+
 		# Ako je definiran item_id, uzmi informacije iz baze podataka i popuni polja
 		else:
 			item = database_interaction.get_item(item_id)
@@ -1355,7 +1468,31 @@ class ItemEditWidget(QWidget):
 			self.item_description_edit.setPlainText(item["DETAILS"])
 
 			category_name = database_interaction.get_category_name(item["CATEGORY_ID"])
-			self.item_category_edit.setCurrentText(category_name)
+			self.item_category_edit.setCurrentText(category_name.capitalize())
+
+		self.update_selected_descriptors()
+
+
+	def item_clicked(self):
+		clicked_item_id = self.sender().property("id")
+
+		# Ako vec nije bio izabran proizvod ili je drugaciji od kliknutog,
+		# izaberi kliknutog
+		if self.selected_item_id == -1 or self.selected_item_id != clicked_item_id:
+			self.selected_item_id = clicked_item_id
+			self.set_item_info(clicked_item_id)
+
+			if self.selected_mode == "edit":
+				self.set_info_interaction_state(True)
+
+		# Ako je vec izabrani proizvod isti kao kliknuti, unselectaj ga
+		elif self.selected_item_id == clicked_item_id:
+			self.list_widget.unselect_all_buttons()
+			self.selected_item_id = -1
+			self.set_item_info()
+
+			if self.selected_mode == "edit":
+				self.set_info_interaction_state(False)
 
 
 	def item_name_changed(self):
@@ -1382,11 +1519,14 @@ class ItemEditWidget(QWidget):
 			self.edit_button.setDisabled(True)
 
 		if item_category_name:
-			self.item_property_label.setDisabled(False)
-			self.item_property_edit.setDisabled(False)
+			if self.selected_mode == "add" or self.selected_mode == "edit":
+				self.item_property_label.setDisabled(False)
+				self.item_property_edit.setDisabled(False)
 		else:
 			self.item_property_label.setDisabled(True)
 			self.item_property_edit.setDisabled(True)
+
+		self.update_property_list()
 
 
 	def load_image_clicked(self):
