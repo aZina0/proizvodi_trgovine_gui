@@ -66,8 +66,8 @@ def initialize():
 			(ID INTEGER PRIMARY KEY, NAME VARCHAR);
 		""")
 
-		add_category("odjeća")
-		add_category("piće")
+		odjeca_category_id = add_category("odjeća")
+		pice_category_id = add_category("piće")
 		add_category("ostalo")
 
 		# Napravi tablicu grupa svojstava
@@ -77,13 +77,13 @@ def initialize():
 		""")
 
 		# Umetni grupe svojstava za odjecu (boja, materijal, spol)
-		add_property("odjeća", "boja")
-		add_property("odjeća", "materijal")
-		add_property("odjeća", "spol")
+		odjeca_boja_property_id = add_property(odjeca_category_id, "boja")
+		odjeca_materijal_property_id = add_property(odjeca_category_id, "materijal")
+		odjeca_spol_property_id = add_property(odjeca_category_id, "spol")
 
 		# Umetni grupe svojstava za pica (vrsta, ambalaza)
-		add_property("piće", "vrsta")
-		add_property("piće", "ambalaža")
+		pice_vrsta_property_id = add_property(pice_category_id, "vrsta")
+		pice_ambalaza_property_id = add_property(pice_category_id, "ambalaža")
 
 
 		# Napravi tablicu specificnih svojstava
@@ -93,25 +93,25 @@ def initialize():
 		""")
 
 		# Umetni specificna svojstva za boju (crvena, crna, bijela)
-		add_descriptor("odjeća", "boja", "crvena")
-		add_descriptor("odjeća", "boja", "crna")
-		add_descriptor("odjeća", "boja", "bijela")
+		add_descriptor(odjeca_boja_property_id, "crvena")
+		add_descriptor(odjeca_boja_property_id, "crna")
+		add_descriptor(odjeca_boja_property_id, "bijela")
 
 		# Umetni specificna svojstva za materijal (pamuk, poliester)
-		add_descriptor("odjeća", "materijal", "pamuk")
-		add_descriptor("odjeća", "materijal", "poliester")
+		add_descriptor(odjeca_materijal_property_id, "pamuk")
+		add_descriptor(odjeca_materijal_property_id, "poliester")
 
 		# Umetni specificna svojstva za spol (muski, zenski)
-		add_descriptor("odjeća", "spol", "muški")
-		add_descriptor("odjeća", "spol", "ženski")
+		add_descriptor(odjeca_spol_property_id, "muški")
+		add_descriptor(odjeca_spol_property_id, "ženski")
 
 		# Umetni specificna svojstva za vrstu pica (gazirano, alkoholno)
-		add_descriptor("piće", "vrsta", "gazirano")
-		add_descriptor("piće", "vrsta", "alkoholno")
+		add_descriptor(pice_vrsta_property_id, "gazirano")
+		add_descriptor(pice_vrsta_property_id, "alkoholno")
 
 		# Umetni specificna svojstva za ambalazu (boca, tetrapak)
-		add_descriptor("piće", "ambalaža", "boca")
-		add_descriptor("piće", "ambalaža", "tetrapak")
+		add_descriptor(pice_ambalaza_property_id, "boca")
+		add_descriptor(pice_ambalaza_property_id, "tetrapak")
 
 
 
@@ -276,21 +276,24 @@ def category_exists(category_name):
 
 def add_category(category_name):
 	category_name = category_name.lower()
+	category_id = -1
 
 	with connection:
-		connection.execute(f"""
+		result = connection.execute(f"""
 			INSERT INTO CATEGORIES (NAME)
-			VALUES ("{category_name}");
+			VALUES ("{category_name}")
+			RETURNING ID;
 		""")
 
+		category_id = result[0][0]
 
-def rename_category(current_category_name, new_category_name):
-	current_category_name = current_category_name.lower()
+	return category_id
+
+
+def rename_category(category_id, new_category_name):
 	new_category_name = new_category_name.lower()
 
 	with connection:
-		category_id = get_category_id(current_category_name)
-
 		connection.execute(f"""
 			UPDATE CATEGORIES AS category
 			SET NAME="{new_category_name}"
@@ -298,12 +301,10 @@ def rename_category(current_category_name, new_category_name):
 		""")
 
 
-def remove_category(category_name):
-	category_name = category_name.lower()
-
+def remove_category(category_id):
 	with connection:
-		for property in get_properties(category_name):
-			property_id = get_property_id(category_name, property["NAME"])
+		for property in get_properties(category_id):
+			property_id = property["ID"]
 
 			connection.execute(f"""
 				DELETE
@@ -311,7 +312,6 @@ def remove_category(category_name):
 				WHERE PROPERTY_ID={property_id};
 			""")
 
-		category_id = get_category_id(category_name)
 		connection.execute(f"""
 			DELETE
 			FROM PROPERTIES
@@ -321,18 +321,15 @@ def remove_category(category_name):
 		connection.execute(f"""
 			DELETE
 			FROM CATEGORIES
-			WHERE NAME="{category_name}";
+			WHERE ID={category_id};
 		""")
 
 
 
-def get_properties(category_name):
-	category_name = category_name.lower()
+def get_properties(category_id):
 	properties = []
 
 	with connection:
-		category_id = get_category_id(category_name)
-
 		result, col_names = connection.execute_and_return_col_names(f"""
 			SELECT *
 			FROM PROPERTIES AS property
@@ -348,13 +345,10 @@ def get_properties(category_name):
 	return properties
 
 
-def property_exists(category_name, property_name):
-	category_name = category_name.lower()
+def property_exists(category_id, property_name):
 	property_name = property_name.lower()
 
 	with connection:
-		category_id = get_category_id(category_name)
-
 		result = connection.execute(f"""
 			SELECT *
 			FROM PROPERTIES AS property
@@ -368,65 +362,53 @@ def property_exists(category_name, property_name):
 		return False
 
 
-def add_property(category_name, property_name):
-	category_name = category_name.lower()
+def add_property(category_id, property_name):
 	property_name = property_name.lower()
+	property_id = -1
 
 	with connection:
-		category_id = get_category_id(category_name)
-
-		connection.execute(f"""
+		result = connection.execute(f"""
 			INSERT INTO PROPERTIES (NAME, CATEGORY_ID)
-			VALUES ("{property_name}", {category_id});
+			VALUES ("{property_name}", {category_id})
+			RETURNING ID;
 		""")
 
+		property_id = result[0][0]
 
-def rename_property(category_name, current_property_name, new_property_name):
-	category_name = category_name.lower()
-	current_property_name = current_property_name.lower()
+	return property_id
+
+
+def rename_property(property_id, new_property_name):
 	new_property_name = new_property_name.lower()
 
 	with connection:
-		category_id = get_category_id(category_name)
-
 		connection.execute(f"""
-			UPDATE PROPERTIES AS property
+			UPDATE PROPERTIES
 			SET NAME="{new_property_name}"
-			WHERE property.NAME="{current_property_name}"
-			AND property.CATEGORY_ID={category_id};
+			WHERE ID={property_id};
 		""")
 
 
-def remove_property(category_name, property_name):
-	category_name = category_name.lower()
-	property_name = property_name.lower()
-
+def remove_property(property_id):
 	with connection:
-		property_id = get_property_id(category_name, property_name)
 		connection.execute(f"""
 			DELETE
 			FROM DESCRIPTORS
 			WHERE PROPERTY_ID={property_id};
 		""")
 
-		category_id = get_category_id(category_name)
 		connection.execute(f"""
 			DELETE
-			FROM PROPERTIES AS property
-			WHERE property.NAME="{property_name}"
-			AND property.CATEGORY_ID={category_id};
+			FROM PROPERTIES
+			WHERE ID={property_id};
 		""")
 
 
 
-def get_descriptors(category_name, property_name):
-	category_name = category_name.lower()
-	property_name = property_name.lower()
+def get_descriptors(property_id):
 	descriptors = []
 
 	with connection:
-		property_id = get_property_id(category_name, property_name)
-
 		result, col_names = connection.execute_and_return_col_names(f"""
 			SELECT *
 			FROM DESCRIPTORS AS descriptor
@@ -442,14 +424,10 @@ def get_descriptors(category_name, property_name):
 	return descriptors
 
 
-def descriptor_exists(category_name, property_name, descriptor_name):
-	category_name = category_name.lower()
-	property_name = property_name.lower()
+def descriptor_exists(property_id, descriptor_name):
 	descriptor_name = descriptor_name.lower()
 
 	with connection:
-		property_id = get_property_id(category_name, property_name)
-
 		result = connection.execute(f"""
 			SELECT *
 			FROM DESCRIPTORS AS descriptor
@@ -463,50 +441,39 @@ def descriptor_exists(category_name, property_name, descriptor_name):
 		return False
 
 
-def add_descriptor(category_name, property_name, descriptor_name):
-	category_name = category_name.lower()
-	property_name = property_name.lower()
+def add_descriptor(property_id, descriptor_name):
 	descriptor_name = descriptor_name.lower()
+	descriptor_id = -1
 
 	with connection:
-		property_id = get_property_id(category_name, property_name)
-
-		connection.execute(f"""
+		result = connection.execute(f"""
 			INSERT INTO DESCRIPTORS (NAME, PROPERTY_ID)
-			VALUES ("{descriptor_name}", {property_id});
+			VALUES ("{descriptor_name}", {property_id})
+			RETURNING ID;
 		""")
 
+		descriptor_id = result[0][0]
 
-def rename_descriptor(category_name, property_name, current_descriptor_name, new_descriptor_name):
-	category_name = category_name.lower()
-	property_name = property_name.lower()
-	current_descriptor_name = current_descriptor_name.lower()
+	return descriptor_id
+
+
+def rename_descriptor(descriptor_id, new_descriptor_name):
 	new_descriptor_name = new_descriptor_name.lower()
 
 	with connection:
-		property_id = get_property_id(category_name, property_name)
-
 		connection.execute(f"""
 			UPDATE DESCRIPTORS AS descriptor
 			SET NAME="{new_descriptor_name}"
-			WHERE descriptor.NAME="{current_descriptor_name}"
-			AND descriptor.PROPERTY_ID={property_id};
+			WHERE descriptor.ID={descriptor_id};
 		""")
 
 
-def remove_descriptor(category_name, property_name, descriptor_name):
-	category_name = category_name.lower()
-	property_name = property_name.lower()
-	descriptor_name = descriptor_name.lower()
-
+def remove_descriptor(descriptor_id):
 	with connection:
-		property_id = get_property_id(category_name, property_name)
-
 		connection.execute(f"""
 			DELETE
-			FROM DESCRIPTORS AS descriptor
-			WHERE descriptor.NAME="{descriptor_name}"
-			AND descriptor.PROPERTY_ID={property_id};
+			FROM DESCRIPTORS
+			WHERE ID={descriptor_id};
 		""")
 
 

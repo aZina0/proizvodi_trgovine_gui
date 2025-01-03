@@ -84,34 +84,32 @@ class RadioButtonScrollList(QScrollArea):
 
 
 	def button_clicked(self):
-		clicked_button_text = self.sender().property("name")
-		for button_text in self.buttons:
-			if button_text != clicked_button_text:
-				self.buttons[button_text].setChecked(False)
+		clicked_button_id = self.sender().property("ID")
+		for button_id in self.buttons:
+			if button_id != clicked_button_id:
+				self.buttons[button_id].setChecked(False)
 
 
-	def create_button(self, text):
+	def create_button(self, id, text):
 		text = text.lower()
 
 		button = QPushButton(text.capitalize())
 		button.setCheckable(True)
-		button.setProperty("name", text)
+		button.setProperty("ID", id)
 		button.clicked.connect(self.button_clicked)
 		self.base_widget.layout().addWidget(button)
-		self.buttons[text] = button
 
-		return self.buttons[text]
+		self.buttons[id] = button
 
-
-	def rename_button(self, current_text, new_text):
-		button = self.buttons.pop(current_text)
-		button.setProperty("name", new_text)
-		button.setText(new_text.capitalize())
-		self.buttons[new_text] = button
+		return button
 
 
-	def delete_button(self, text):
-		button = self.buttons.pop(text)
+	def rename_button(self, id, new_text):
+		self.buttons[id].setText(new_text.capitalize())
+
+
+	def delete_button(self, id):
+		button = self.buttons.pop(id)
 		button.clicked.disconnect()
 		self.base_widget.layout().removeWidget(button)
 		button.deleteLater()
@@ -124,8 +122,8 @@ class RadioButtonScrollList(QScrollArea):
 
 
 	def unselect_all_buttons(self):
-		for button_text in self.buttons:
-			self.buttons[button_text].setChecked(False)
+		for id in self.buttons:
+			self.buttons[id].setChecked(False)
 
 
 
@@ -190,11 +188,11 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 		self.section_widgets[section_name] = checkboxes_widget
 
 		for checkbox_info in checkbox_infos:
-			checkbox_name = checkbox_info["name"]
-			checkbox_id = checkbox_info["id"]
+			checkbox_name = checkbox_info["NAME"]
+			checkbox_id = checkbox_info["ID"]
 
 			checkbox = QCheckBox(checkbox_name)
-			checkbox.setProperty("id", checkbox_id)
+			checkbox.setProperty("ID", checkbox_id)
 			if self.disabled:
 				checkbox.setDisabled(True)
 			self.checkboxes[checkbox_id] = checkbox
@@ -576,7 +574,7 @@ class CategoryEditWidget(QWidget):
 		layout.addWidget(self.remove_group, 2, 1)
 		self.setLayout(layout)
 
-		self.selected_category = ""
+		self.selected_category = -1
 
 		self.close()
 
@@ -585,8 +583,7 @@ class CategoryEditWidget(QWidget):
 		self.show()
 
 		for category in database_interaction.get_categories():
-			category_name = category["NAME"]
-			button = self.list_widget.create_button(category_name)
+			button = self.list_widget.create_button(category["ID"], category["NAME"])
 			button.clicked.connect(self.category_clicked)
 
 
@@ -596,18 +593,18 @@ class CategoryEditWidget(QWidget):
 		self.list_widget.delete_all_buttons()
 		self.rename_group.setDisabled(True)
 		self.remove_group.setDisabled(True)
-		self.selected_category = ""
+		self.selected_category = -1
 
 
 	def category_clicked(self):
-		category = self.sender().property("name")
+		category_id = self.sender().property("ID")
 
-		if self.selected_category == "" or self.selected_category != category:
-			self.selected_category = category
+		if self.selected_category == -1 or self.selected_category != category_id:
+			self.selected_category = category_id
 			self.rename_group.setDisabled(False)
 			self.remove_group.setDisabled(False)
-		elif self.selected_category == category:
-			self.selected_category = ""
+		elif self.selected_category == category_id:
+			self.selected_category = -1
 			self.rename_group.setDisabled(True)
 			self.remove_group.setDisabled(True)
 
@@ -621,37 +618,33 @@ class CategoryEditWidget(QWidget):
 		if database_interaction.category_exists(new_category_name):
 			return
 
-		database_interaction.add_category(new_category_name)
+		new_category_id = database_interaction.add_category(new_category_name)
 
 		self.add_text.setText("")
 
-		button = self.list_widget.create_button(new_category_name)
+		button = self.list_widget.create_button(new_category_id, new_category_name)
 		button.clicked.connect(self.category_clicked)
 
 
 	def rename_button_clicked(self):
-		current_category_name = self.selected_category
+		category_id = self.selected_category
 		new_category_name = self.rename_text.text()
 
 		if database_interaction.category_exists(new_category_name):
 			return
 
-		database_interaction.rename_category(current_category_name, new_category_name)
+		database_interaction.rename_category(category_id, new_category_name)
 
 		self.rename_text.setText("")
 
-		self.list_widget.rename_button(current_category_name, new_category_name)
-		self.selected_category = new_category_name
+		self.list_widget.rename_button(category_id, new_category_name)
 
 
 	def remove_button_clicked(self):
-		category_name = self.selected_category
+		category_id = self.selected_category
 
-		if not database_interaction.category_exists(category_name):
-			return
-
-		database_interaction.remove_category(category_name)
-		self.list_widget.delete_button(category_name)
+		database_interaction.remove_category(category_id)
+		self.list_widget.delete_button(category_id)
 
 		self.rename_group.setDisabled(True)
 		self.remove_group.setDisabled(True)
@@ -769,8 +762,8 @@ class PropertyEditWidget(QWidget):
 		layout.addWidget(self.remove_group, 2, 2)
 		self.setLayout(layout)
 
-		self.selected_category = ""
-		self.selected_property = ""
+		self.selected_category = -1
+		self.selected_property = -1
 
 		self.close()
 
@@ -779,8 +772,7 @@ class PropertyEditWidget(QWidget):
 		self.show()
 
 		for category in database_interaction.get_categories():
-			category_name = category["NAME"]
-			button = self.category_list_widget.create_button(category_name)
+			button = self.category_list_widget.create_button(category["ID"], category["NAME"])
 			button.clicked.connect(self.category_clicked)
 
 
@@ -792,19 +784,19 @@ class PropertyEditWidget(QWidget):
 		self.add_group.setDisabled(True)
 		self.rename_group.setDisabled(True)
 		self.remove_group.setDisabled(True)
-		self.selected_category = ""
-		self.selected_property = ""
+		self.selected_category = -1
+		self.selected_property = -1
 
 
 	def category_clicked(self):
-		category = self.sender().property("name")
+		category_id = self.sender().property("ID")
 
-		if self.selected_category == "" or self.selected_category != category:
-			self.selected_category = category
+		if self.selected_category == -1 or self.selected_category != category_id:
+			self.selected_category = category_id
 			self.add_group.setDisabled(False)
-		elif self.selected_category == category:
-			self.selected_category = ""
-			self.selected_property = ""
+		elif self.selected_category == category_id:
+			self.selected_category = -1
+			self.selected_property = -1
 			self.add_group.setDisabled(True)
 
 		self.rename_group.setDisabled(True)
@@ -812,24 +804,23 @@ class PropertyEditWidget(QWidget):
 
 		self.property_list_widget.delete_all_buttons()
 
-		if self.selected_category == "":
+		if self.selected_category == -1:
 			return
 
 		for property in database_interaction.get_properties(self.selected_category):
-			property_name = property["NAME"]
-			button = self.property_list_widget.create_button(property_name)
+			button = self.property_list_widget.create_button(property["ID"], property["NAME"])
 			button.clicked.connect(self.property_clicked)
 
 
 	def property_clicked(self):
-		property = self.sender().property("name")
+		property_id = self.sender().property("ID")
 
-		if self.selected_property == "" or self.selected_property != property:
-			self.selected_property = property
+		if self.selected_property == -1 or self.selected_property != property_id:
+			self.selected_property = property_id
 			self.rename_group.setDisabled(False)
 			self.remove_group.setDisabled(False)
-		elif self.selected_property == property:
-			self.selected_property = ""
+		elif self.selected_property == property_id:
+			self.selected_property = -1
 			self.rename_group.setDisabled(True)
 			self.remove_group.setDisabled(True)
 
@@ -840,43 +831,39 @@ class PropertyEditWidget(QWidget):
 		if new_property_name == "":
 			return
 
-		if self.selected_category == "":
+		if self.selected_category == -1:
 			return
 
 		if database_interaction.property_exists(self.selected_category, new_property_name):
 			return
 
-		database_interaction.add_property(self.selected_category, new_property_name)
+		property_id = database_interaction.add_property(self.selected_category, new_property_name)
 
 		self.add_text.setText("")
 
-		button = self.property_list_widget.create_button(new_property_name)
+		button = self.property_list_widget.create_button(property_id, new_property_name)
 		button.clicked.connect(self.property_clicked)
 
 
 	def rename_button_clicked(self):
-		current_property_name = self.selected_property
+		property_id = self.selected_property
 		new_property_name = self.rename_text.text()
 
 		if database_interaction.property_exists(self.selected_category, new_property_name):
 			return
 
-		database_interaction.rename_property(self.selected_category, current_property_name, new_property_name)
+		database_interaction.rename_property(property_id, new_property_name)
 
 		self.rename_text.setText("")
 
-		self.property_list_widget.rename_button(current_property_name, new_property_name)
-		self.selected_property = new_property_name
+		self.property_list_widget.rename_button(property_id, new_property_name)
 
 
 	def remove_button_clicked(self):
-		property_name = self.selected_property
+		property_id = self.selected_property
 
-		if not database_interaction.property_exists(self.selected_category, property_name):
-			return
-
-		database_interaction.remove_property(self.selected_category, property_name)
-		self.property_list_widget.delete_button(property_name)
+		database_interaction.remove_property(property_id)
+		self.property_list_widget.delete_button(property_id)
 
 		self.rename_group.setDisabled(True)
 		self.remove_group.setDisabled(True)
@@ -1003,9 +990,9 @@ class DescriptorEditWidget(QWidget):
 		layout.addWidget(self.remove_group, 2, 3)
 		self.setLayout(layout)
 
-		self.selected_category = ""
-		self.selected_property = ""
-		self.selected_descriptor = ""
+		self.selected_category = -1
+		self.selected_property = -1
+		self.selected_descriptor = -1
 
 		self.close()
 
@@ -1014,8 +1001,7 @@ class DescriptorEditWidget(QWidget):
 		self.show()
 
 		for category in database_interaction.get_categories():
-			category_name = category["NAME"]
-			button = self.category_list_widget.create_button(category_name)
+			button = self.category_list_widget.create_button(category["ID"], category["NAME"])
 			button.clicked.connect(self.category_clicked)
 
 
@@ -1028,20 +1014,20 @@ class DescriptorEditWidget(QWidget):
 		self.add_group.setDisabled(True)
 		self.rename_group.setDisabled(True)
 		self.remove_group.setDisabled(True)
-		self.selected_category = ""
-		self.selected_property = ""
-		self.selected_descriptor = ""
+		self.selected_category = -1
+		self.selected_property = -1
+		self.selected_descriptor = -1
 
 
 	def category_clicked(self):
-		category = self.sender().property("name")
+		category_id = self.sender().property("ID")
 
-		if self.selected_category == "" or self.selected_category != category:
-			self.selected_category = category
-		elif self.selected_category == category:
-			self.selected_category = ""
-			self.selected_property = ""
-			self.selected_descriptor = ""
+		if self.selected_category == -1 or self.selected_category != category_id:
+			self.selected_category = category_id
+		elif self.selected_category == category_id:
+			self.selected_category = -1
+			self.selected_property = -1
+			self.selected_descriptor = -1
 
 		self.add_group.setDisabled(True)
 		self.rename_group.setDisabled(True)
@@ -1050,23 +1036,22 @@ class DescriptorEditWidget(QWidget):
 		self.property_list_widget.delete_all_buttons()
 		self.descriptor_list_widget.delete_all_buttons()
 
-		if self.selected_category == "":
+		if self.selected_category == -1:
 			return
 
 		for property in database_interaction.get_properties(self.selected_category):
-			property_name = property["NAME"]
-			button = self.property_list_widget.create_button(property_name)
+			button = self.property_list_widget.create_button(property["ID"], property["NAME"])
 			button.clicked.connect(self.property_clicked)
 
 
 	def property_clicked(self):
-		property = self.sender().property("name")
+		property_id = self.sender().property("ID")
 
-		if self.selected_property == "" or self.selected_property != property:
-			self.selected_property = property
+		if self.selected_property == -1 or self.selected_property != property_id:
+			self.selected_property = property_id
 			self.add_group.setDisabled(False)
-		elif self.selected_property == property:
-			self.selected_property = ""
+		elif self.selected_property == property_id:
+			self.selected_property = -1
 			self.add_group.setDisabled(True)
 
 		self.rename_group.setDisabled(True)
@@ -1074,24 +1059,23 @@ class DescriptorEditWidget(QWidget):
 
 		self.descriptor_list_widget.delete_all_buttons()
 
-		if self.selected_property == "":
+		if self.selected_property == -1:
 			return
 
-		for descriptor in database_interaction.get_descriptors(self.selected_category, property):
-			descriptor_name = descriptor["NAME"]
-			button = self.descriptor_list_widget.create_button(descriptor_name)
+		for descriptor in database_interaction.get_descriptors(property_id):
+			button = self.descriptor_list_widget.create_button(descriptor["ID"],descriptor["NAME"])
 			button.clicked.connect(self.descriptor_clicked)
 
 
 	def descriptor_clicked(self):
-		descriptor = self.sender().property("name")
+		descriptor_id = self.sender().property("ID")
 
-		if self.selected_descriptor == "" or self.selected_descriptor != descriptor:
-			self.selected_descriptor = descriptor
+		if self.selected_descriptor == -1 or self.selected_descriptor != descriptor_id:
+			self.selected_descriptor = descriptor_id
 			self.rename_group.setDisabled(False)
 			self.remove_group.setDisabled(False)
-		elif self.selected_descriptor == descriptor:
-			self.selected_descriptor = ""
+		elif self.selected_descriptor == descriptor_id:
+			self.selected_descriptor = -1
 			self.rename_group.setDisabled(True)
 			self.remove_group.setDisabled(True)
 
@@ -1102,68 +1086,39 @@ class DescriptorEditWidget(QWidget):
 		if new_descriptor_name == "":
 			return
 
-		if self.selected_category == "" or self.selected_property == "":
+		if self.selected_category == -1 or self.selected_property == -1:
 			return
 
-		if database_interaction.descriptor_exists(
-			self.selected_category,
-			self.selected_property,
-			new_descriptor_name
-		):
+		if database_interaction.descriptor_exists(self.selected_property, new_descriptor_name):
 			return
 
-		database_interaction.add_descriptor(
-			self.selected_category,
+		descriptor_id = database_interaction.add_descriptor(
 			self.selected_property,
 			new_descriptor_name
 		)
 
 		self.add_text.setText("")
 
-		button = self.descriptor_list_widget.create_button(new_descriptor_name)
+		button = self.descriptor_list_widget.create_button(descriptor_id, new_descriptor_name)
 		button.clicked.connect(self.descriptor_clicked)
 
 
 	def rename_button_clicked(self):
-		current_descriptor_name = self.selected_descriptor
 		new_descriptor_name = self.rename_text.text()
 
-		if database_interaction.descriptor_exists(
-			self.selected_category,
-			self.selected_property,
-			new_descriptor_name
-		):
+		if database_interaction.descriptor_exists(self.selected_property, new_descriptor_name):
 			return
 
-		database_interaction.rename_descriptor(
-			self.selected_category,
-			self.selected_property,
-			current_descriptor_name,
-			new_descriptor_name
-		)
+		database_interaction.rename_descriptor(self.selected_descriptor, new_descriptor_name)
 
 		self.rename_text.setText("")
 
-		self.descriptor_list_widget.rename_button(current_descriptor_name, new_descriptor_name)
-		self.selected_descriptor = new_descriptor_name
+		self.descriptor_list_widget.rename_button(self.selected_descriptor, new_descriptor_name)
 
 
 	def remove_button_clicked(self):
-		descriptor_name = self.selected_descriptor
-
-		if not database_interaction.descriptor_exists(
-			self.selected_category,
-			self.selected_property,
-			descriptor_name
-		):
-			return
-
-		database_interaction.remove_descriptor(
-			self.selected_category,
-			self.selected_property,
-			descriptor_name
-		)
-		self.descriptor_list_widget.delete_button(descriptor_name)
+		database_interaction.remove_descriptor(self.selected_descriptor)
+		self.descriptor_list_widget.delete_button(self.selected_descriptor)
 
 		self.rename_group.setDisabled(True)
 		self.remove_group.setDisabled(True)
@@ -1323,8 +1278,7 @@ class ItemEditWidget(QWidget):
 		self.list_widget.delete_all_buttons()
 
 		for item in database_interaction.get_items():
-			button = self.list_widget.create_button(item["NAME"])
-			button.setProperty("id", item["ID"])
+			button = self.list_widget.create_button(item["ID"], item["NAME"])
 			button.clicked.connect(self.item_clicked)
 
 
@@ -1372,26 +1326,26 @@ class ItemEditWidget(QWidget):
 		if not item_category_name:
 			return
 
-		for property in database_interaction.get_properties(item_category_name):
-			property_name = property["NAME"]
-
+		item_category_id = database_interaction.get_category_id(item_category_name)
+		for property in database_interaction.get_properties(item_category_id):
 			descriptors = []
 
-			for descriptor in database_interaction.get_descriptors(item_category_name, property_name):
+			for descriptor in database_interaction.get_descriptors(property["ID"]):
 				descriptor_id = descriptor["ID"]
 				descriptor_name = descriptor["NAME"]
 				descriptors.append(
-					{"id": descriptor_id, "name": descriptor_name.capitalize()}
+					{"ID": descriptor_id, "NAME": descriptor_name.capitalize()}
 				)
 
-			self.item_property_edit.add_section(property_name, descriptors)
+			self.item_property_edit.add_section(property["NAME"], descriptors)
 
 
 	def update_selected_descriptors(self):
 		for checkbox in self.item_property_edit.checkboxes.values():
 			checkbox.setChecked(False)
 		if self.selected_item_id > -1:
-			selected_item_descriptor_ids = database_interaction.get_item_descriptors(self.selected_item_id)
+			selected_item_descriptor_ids = \
+				database_interaction.get_item_descriptors(self.selected_item_id)
 			for descriptor_id in selected_item_descriptor_ids:
 				self.item_property_edit.checkboxes[descriptor_id].setChecked(True)
 
@@ -1457,6 +1411,9 @@ class ItemEditWidget(QWidget):
 		self.list_widget.unselect_all_buttons()
 		self.selected_item_id = -1
 
+		# Disableaj remove button jer nijedan proizvod nije izabran
+		self.remove_button.setDisabled(True)
+
 		# Prikazi listu s proizvodima
 		self.list_group.show()
 		self.layout().setColumnStretch(0, 2)
@@ -1495,7 +1452,7 @@ class ItemEditWidget(QWidget):
 
 
 	def item_clicked(self):
-		clicked_item_id = self.sender().property("id")
+		clicked_item_id = self.sender().property("ID")
 
 		# Ako vec nije bio izabran proizvod ili je drugaciji od kliknutog,
 		# izaberi kliknutog
@@ -1505,6 +1462,8 @@ class ItemEditWidget(QWidget):
 
 			if self.selected_mode == "edit":
 				self.set_info_interaction_state(True)
+			elif self.selected_mode == "remove":
+				self.remove_button.setDisabled(False)
 
 		# Ako je vec izabrani proizvod isti kao kliknuti, unselectaj ga
 		elif self.selected_item_id == clicked_item_id:
@@ -1514,6 +1473,8 @@ class ItemEditWidget(QWidget):
 
 			if self.selected_mode == "edit":
 				self.set_info_interaction_state(False)
+			elif self.selected_mode == "remove":
+				self.remove_button.setDisabled(True)
 
 
 	def item_name_changed(self):
@@ -1576,7 +1537,7 @@ class ItemEditWidget(QWidget):
 
 
 	def remove_button_clicked(self):
-		pass
+		database_interaction.remove_item(self.selected_item_id)
 
 
 
