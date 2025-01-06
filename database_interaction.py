@@ -303,25 +303,25 @@ def rename_category(category_id, new_category_name):
 
 def remove_category(category_id):
 	with connection:
+		# Izbrisi sve grupe svojstava i sva specifina svojstva kategorije koja se brise
 		for property in get_properties(category_id):
-			property_id = property["ID"]
+			for descriptor in get_descriptors(property["ID"]):
+				remove_descriptor(descriptor["ID"])
+			remove_property(property["ID"])
 
-			connection.execute(f"""
-				DELETE
-				FROM DESCRIPTORS
-				WHERE PROPERTY_ID={property_id};
-			""")
-
-		connection.execute(f"""
-			DELETE
-			FROM PROPERTIES
-			WHERE CATEGORY_ID={category_id};
-		""")
-
+		# Izbrisi kategoriju
 		connection.execute(f"""
 			DELETE
 			FROM CATEGORIES
 			WHERE ID={category_id};
+		""")
+
+		# Svim proizvodima obrisane kategorije promjeni kategoriju u kategoriju "Ostalo"
+		ostalo_category_id = get_category_id("ostalo")
+		connection.execute(f"""
+			UPDATE ITEMS
+			SET CATEGORY_ID={ostalo_category_id}
+			WHERE CATEGORY_ID={category_id};
 		""")
 
 
@@ -391,11 +391,8 @@ def rename_property(property_id, new_property_name):
 
 def remove_property(property_id):
 	with connection:
-		connection.execute(f"""
-			DELETE
-			FROM DESCRIPTORS
-			WHERE PROPERTY_ID={property_id};
-		""")
+		for descriptor in get_descriptors(property_id):
+			remove_descriptor(descriptor["ID"])
 
 		connection.execute(f"""
 			DELETE
@@ -474,6 +471,12 @@ def remove_descriptor(descriptor_id):
 			DELETE
 			FROM DESCRIPTORS
 			WHERE ID={descriptor_id};
+		""")
+
+		connection.execute(f"""
+			DELETE
+			FROM ITEM_DESCRIPTORS
+			WHERE DESCRIPTOR_ID={descriptor_id};
 		""")
 
 

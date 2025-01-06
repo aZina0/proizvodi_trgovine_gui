@@ -638,20 +638,30 @@ class CategoryEditWidget(QWidget):
 
 	def rename_button_clicked(self):
 		category_id = self.selected_category
+		category_name = database_interaction.get_category_name(category_id).lower()
 		new_category_name = self.rename_text.text()
 
+		# Odbaci pokusaj preimenovanje kategorije proizvoda "Ostalo"
+		if category_name == "ostalo":
+			return
+
+		# Odbaci pokusaj preimenovanje kategorije ako novo ime vec postoji
 		if database_interaction.category_exists(new_category_name):
 			return
 
 		database_interaction.rename_category(category_id, new_category_name)
 
 		self.rename_text.setText("")
-
 		self.list_widget.rename_button(category_id, new_category_name)
 
 
 	def remove_button_clicked(self):
 		category_id = self.selected_category
+		category_name = database_interaction.get_category_name(category_id).lower()
+
+		# Odbaci pokušaj brisanja kategorije proizvoda "Ostalo"
+		if category_name == "ostalo":
+			return
 
 		database_interaction.remove_category(category_id)
 		self.list_widget.delete_button(category_id)
