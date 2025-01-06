@@ -93,25 +93,25 @@ def initialize():
 		""")
 
 		# Umetni specificna svojstva za boju (crvena, crna, bijela)
-		add_descriptor(odjeca_boja_property_id, "crvena")
-		add_descriptor(odjeca_boja_property_id, "crna")
-		add_descriptor(odjeca_boja_property_id, "bijela")
+		odjeca_boja_crvena_id = add_descriptor(odjeca_boja_property_id, "crvena")
+		odjeca_boja_crna_id = add_descriptor(odjeca_boja_property_id, "crna")
+		odjeca_boja_bijela_id = add_descriptor(odjeca_boja_property_id, "bijela")
 
 		# Umetni specificna svojstva za materijal (pamuk, poliester)
-		add_descriptor(odjeca_materijal_property_id, "pamuk")
-		add_descriptor(odjeca_materijal_property_id, "poliester")
+		odjeca_materijal_pamuk_id = add_descriptor(odjeca_materijal_property_id, "pamuk")
+		odjeca_materijal_poliester_id = add_descriptor(odjeca_materijal_property_id, "poliester")
 
 		# Umetni specificna svojstva za spol (muski, zenski)
-		add_descriptor(odjeca_spol_property_id, "muški")
-		add_descriptor(odjeca_spol_property_id, "ženski")
+		odjeca_spol_muski_id = add_descriptor(odjeca_spol_property_id, "muški")
+		odjeca_spol_zenski_id = add_descriptor(odjeca_spol_property_id, "ženski")
 
 		# Umetni specificna svojstva za vrstu pica (gazirano, alkoholno)
-		add_descriptor(pice_vrsta_property_id, "gazirano")
-		add_descriptor(pice_vrsta_property_id, "alkoholno")
+		pice_vrsta_gazirano_id = add_descriptor(pice_vrsta_property_id, "gazirano")
+		pice_vrsta_alkoholno_id = add_descriptor(pice_vrsta_property_id, "alkoholno")
 
 		# Umetni specificna svojstva za ambalazu (boca, tetrapak)
-		add_descriptor(pice_ambalaza_property_id, "boca")
-		add_descriptor(pice_ambalaza_property_id, "tetrapak")
+		pice_ambalaza_boca_id = add_descriptor(pice_ambalaza_property_id, "boca")
+		pice_ambalaza_tetrapak_id = add_descriptor(pice_ambalaza_property_id, "tetrapak")
 
 
 
@@ -130,22 +130,22 @@ def initialize():
 			name="Nike WOW hlače",
 			category_name="odjeća",
 			details="Ove hlače su uistinu WOW.",
-			properties_descriptors=[
-				("boja", "crna"),
-				("boja", "crvena"),
-				("materijal", "pamuk"),
-				("spol", "muški"),
+			descriptor_ids=[
+				odjeca_boja_crna_id,
+				odjeca_boja_crvena_id,
+				odjeca_materijal_pamuk_id,
+				odjeca_spol_muski_id,
 			]
 		)
 		add_item(
 			name="Adidas majica sa kapuljačom DELUXE",
 			category_name="odjeća",
 			details="Ova bijela unisex majica ima kapuljaču. Baš je DELUXE",
-			properties_descriptors=[
-				("boja", "bijela"),
-				("materijal", "poliester"),
-				("spol", "muški"),
-				("spol", "ženski"),
+			descriptor_ids=[
+				odjeca_boja_bijela_id,
+				odjeca_materijal_pamuk_id,
+				odjeca_spol_muski_id,
+				odjeca_spol_zenski_id,
 			]
 		)
 		add_item(
@@ -158,8 +158,8 @@ def initialize():
 			name="Z bregov Trajno mlijeko 2,8% m.m. 1L",
 			category_name="piće",
 			details="Sterilizirano, homogenizirano mlijeko s 2,8% mliječne masti.",
-			properties_descriptors=[
-				("ambalaža", "tetrapak"),
+			descriptor_ids=[
+				pice_ambalaza_tetrapak_id,
 			]
 		)
 		add_item(
@@ -176,9 +176,9 @@ def initialize():
 				"Originalni okus. Odličan okus. Osvježavajuće. Odlično ide uz hranu. "
 				"Podiže raspoloženje. "
 			),
-			properties_descriptors=[
-				("vrsta", "gazirano"),
-				("ambalaža", "boca"),
+			descriptor_ids=[
+				pice_vrsta_gazirano_id,
+				pice_ambalaza_boca_id,
 			]
 		)
 
@@ -512,42 +512,6 @@ def get_item(item_id):
 	return item
 
 
-def add_item(
-	name,
-	category_name,
-	image = "",
-	details = "",
-	properties_descriptors = []
-):
-
-	item_id = -1
-	with connection:
-		category_id = get_category_id(category_name)
-
-		result = connection.execute(f"""
-			INSERT INTO ITEMS (NAME, CATEGORY_ID, IMAGE, DETAILS)
-			VALUES ("{name}", {category_id}, "{image}", "{details}")
-			RETURNING ID;
-		""")
-		item_id = result[0][0]
-
-		for property_descriptor in properties_descriptors:
-			property_name = property_descriptor[0]
-			descriptor_name = property_descriptor[1]
-			descriptor_id = get_descriptor_id(
-				category_name,
-				property_name,
-				descriptor_name
-			)
-
-			connection.execute(f"""
-				INSERT INTO ITEM_DESCRIPTORS (ITEM_ID, DESCRIPTOR_ID)
-				VALUES ({item_id}, {descriptor_id})
-			""")
-
-	return item_id
-
-
 def get_item_descriptors(item_id):
 	descriptor_ids = []
 
@@ -562,6 +526,68 @@ def get_item_descriptors(item_id):
 			descriptor_ids.append(descriptor[0])
 
 	return descriptor_ids
+
+
+def add_item(
+	name,
+	category_name,
+	image = "",
+	details = "",
+	descriptor_ids = []
+):
+
+	item_id = -1
+	with connection:
+		category_id = get_category_id(category_name)
+
+		result = connection.execute(f"""
+			INSERT INTO ITEMS (NAME, CATEGORY_ID, IMAGE, DETAILS)
+			VALUES ("{name}", {category_id}, "{image}", "{details}")
+			RETURNING ID;
+		""")
+		item_id = result[0][0]
+
+		for descriptor_id in descriptor_ids:
+			connection.execute(f"""
+				INSERT INTO ITEM_DESCRIPTORS (ITEM_ID, DESCRIPTOR_ID)
+				VALUES ({item_id}, {descriptor_id})
+			""")
+
+	return item_id
+
+
+def edit_item(
+	id,
+	name,
+	category_name,
+	image = "",
+	details = "",
+	descriptor_ids = []
+):
+	with connection:
+		category_id = get_category_id(category_name)
+
+		connection.execute(f"""
+			UPDATE ITEMS
+			SET
+				NAME="{name}",
+				CATEGORY_ID={category_id},
+				IMAGE="{image}",
+				DETAILS="{details}"
+			WHERE ID={id};
+		""")
+
+		connection.execute(f"""
+			DELETE
+			FROM ITEM_DESCRIPTORS
+			WHERE ITEM_ID={id};
+		""")
+
+		for descriptor_id in descriptor_ids:
+			connection.execute(f"""
+				INSERT INTO ITEM_DESCRIPTORS (ITEM_ID, DESCRIPTOR_ID)
+				VALUES ({id}, {descriptor_id})
+			""")
 
 
 def remove_item(item_id):

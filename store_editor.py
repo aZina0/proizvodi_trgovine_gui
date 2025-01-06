@@ -242,6 +242,16 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 				checkbox.setDisabled(False)
 
 
+	def get_checked_checkbox_ids(self):
+		checked_checkbox_ids = []
+
+		for id in self.checkboxes:
+			checkbox = self.checkboxes[id]
+			if checkbox.checkState() == Qt.Checked:
+				checked_checkbox_ids.append(id)
+
+		return checked_checkbox_ids
+
 
 
 
@@ -1270,6 +1280,7 @@ class ItemEditWidget(QWidget):
 		self.reset_item_list()
 		self.close()
 
+		self.chosen_image_filename = ""
 		self.selected_item_id = -1
 		self.selected_mode = ""
 
@@ -1429,6 +1440,7 @@ class ItemEditWidget(QWidget):
 		# Ako nije definiran item_id, izbrisi info
 		if item_id == "undefined":
 			self.image_display.setPixmap(QPixmap())
+			self.chosen_image_filename = ""
 			self.item_name_edit.setPlainText("")
 			self.item_description_edit.setPlainText("")
 			self.item_category_edit.setCurrentIndex(-1)
@@ -1439,8 +1451,10 @@ class ItemEditWidget(QWidget):
 
 			if item['IMAGE']:
 				pixmap = QPixmap(f"resources/item_images/{item['IMAGE']}")
+				self.chosen_image_filename = item['IMAGE']
 			else:
 				pixmap = QPixmap(f"resources/item_images/no_image.png")
+				self.chosen_image_filename = ""
 			self.image_display.setPixmap(pixmap)
 			self.item_name_edit.setPlainText(item["NAME"])
 			self.item_description_edit.setPlainText(item["DETAILS"])
@@ -1523,17 +1537,38 @@ class ItemEditWidget(QWidget):
 
 		if image_file_name:
 			pixmap = QPixmap(f"resources/item_images/{image_file_name}")
+			self.chosen_image_filename = image_file_name
 		else:
 			pixmap = QPixmap(f"resources/item_images/no_image.png")
+			self.chosen_image_filename = ""
 		self.image_display.setPixmap(pixmap)
 
 
 	def add_button_clicked(self):
-		pass
+		item_id = database_interaction.add_item(
+			self.item_name_edit.toPlainText(),
+			self.item_category_edit.currentText(),
+			self.chosen_image_filename,
+			self.item_description_edit.toPlainText(),
+			self.item_property_edit.get_checked_checkbox_ids()
+		)
+
+		button = self.list_widget.create_button(item_id, self.item_name_edit.toPlainText())
+		button.clicked.connect(self.item_clicked)
+		self.set_item_info()
 
 
 	def edit_button_clicked(self):
-		pass
+		database_interaction.edit_item(
+			self.selected_item_id,
+			self.item_name_edit.toPlainText(),
+			self.item_category_edit.currentText(),
+			self.chosen_image_filename,
+			self.item_description_edit.toPlainText(),
+			self.item_property_edit.get_checked_checkbox_ids()
+		)
+
+		self.list_widget.rename_button(self.selected_item_id, self.item_name_edit.toPlainText())
 
 
 	def remove_button_clicked(self):
