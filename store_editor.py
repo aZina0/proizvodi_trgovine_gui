@@ -259,7 +259,7 @@ class Window(QMainWindow):
 	def __init__(self):
 		super().__init__()
 		self.setMinimumSize(850, 450)
-		self.setWindowTitle("Uređivač proizvoda/svojstava")
+		self.setWindowTitle("Uređivač proizvoda")
 		self.setWindowIcon(QIcon("resources/settings.png"))
 
 		self.base_widget = QWidget(self)
@@ -337,9 +337,9 @@ class ModeBar(QWidget):
 		}
 
 		self.secondary_buttons = {
-			"category_edit": QPushButton("Dodaj/uredi kategorije"),
-			"property_edit": QPushButton("Dodaj/uredi grupe svojstava"),
-			"descriptor_edit": QPushButton("Dodaj/uredi svojstva"),
+			"category_edit": QPushButton("Uredi kategorije"),
+			"property_edit": QPushButton("Uredi grupe svojstava"),
+			"descriptor_edit": QPushButton("Uredi svojstva"),
 			"item_add": QPushButton("Dodaj proizvod"),
 			"item_edit": QPushButton("Uredi proizvod"),
 			"item_delete": QPushButton("Izbriši proizvod"),
