@@ -1167,21 +1167,15 @@ class ItemEditWidget(QWidget):
 
 		self.info_group = QGroupBox("Informacije o proizvodu")
 		self.info_group.setLayout(QGridLayout())
+		self.info_group.layout().setColumnStretch(0, 1)
+		self.info_group.layout().setColumnStretch(1, 2)
 		self.info_group.layout().setColumnStretch(2, 2)
-		self.info_group.layout().setColumnStretch(4, 2)
-		self.spacerV1 = QWidget()
-		self.spacerV1.setFixedWidth(15)
-		self.spacerV2 = QWidget()
-		self.spacerV2.setFixedWidth(15)
-		self.spacerH1 = QWidget()
-		self.spacerH1.setFixedHeight(15)
-		self.spacerH2 = QWidget()
-		self.spacerH2.setFixedHeight(15)
-		self.info_group.layout().addWidget(self.spacerV1, 0, 1)
-		self.info_group.layout().addWidget(self.spacerV2, 0, 3)
-		self.info_group.layout().addWidget(self.spacerH1, 5, 0)
-		self.info_group.layout().addWidget(self.spacerH1, 8, 0)
+		self.info_group.layout().setContentsMargins(11, 17, 11, 11)
+		self.info_group.layout().setVerticalSpacing(0)
+		self.info_group.layout().setHorizontalSpacing(20)
 
+		self.item_image_label = QLabel("Slika")
+		self.info_group.layout().addWidget(self.item_image_label, 0, 0)
 		self.image_display = QLabel()
 		self.image_display.setStyleSheet(
 			"""
@@ -1194,7 +1188,7 @@ class ItemEditWidget(QWidget):
 		self.image_display.setScaledContents(True)
 		pixmap = QPixmap("resources/item_images/no_image.png")
 		self.image_display.setPixmap(pixmap)
-		self.info_group.layout().addWidget(self.image_display, 0, 0, 4, 1)
+		self.info_group.layout().addWidget(self.image_display, 1, 0, 4, 1)
 		self.image_button = QPushButton("Učitaj sliku")
 		self.image_button.clicked.connect(self.load_image_clicked)
 		self.image_button.setStyleSheet(
@@ -1205,29 +1199,36 @@ class ItemEditWidget(QWidget):
 			}
 			"""
 		)
-		self.info_group.layout().addWidget(self.image_button, 4, 0)
+		self.info_group.layout().addWidget(self.image_button, 5, 0)
+
+
+		empty_space = QWidget()
+		empty_space.setFixedHeight(15)
+		self.info_group.layout().addWidget(empty_space, 6, 0)
+
 
 		self.item_name_label = QLabel("Naziv")
-		self.info_group.layout().addWidget(self.item_name_label, 0, 2)
+		self.info_group.layout().addWidget(self.item_name_label, 0, 1)
 		self.item_name_edit = QPlainTextEdit()
+		self.item_name_edit.setMaximumHeight(75)
 		self.item_name_edit.textChanged.connect(self.item_name_changed)
-		self.info_group.layout().addWidget(self.item_name_edit, 1, 2, 3, 1)
+		self.info_group.layout().addWidget(self.item_name_edit, 1, 1, 3, 1)
 
 		self.item_category_label = QLabel("Kategorija")
-		self.info_group.layout().addWidget(self.item_category_label, 0, 4)
+		self.info_group.layout().addWidget(self.item_category_label, 0, 2)
 		self.item_category_edit = QComboBox()
 		self.item_category_edit.currentTextChanged.connect(self.item_category_changed)
-		self.info_group.layout().addWidget(self.item_category_edit, 1, 4)
+		self.info_group.layout().addWidget(self.item_category_edit, 1, 2)
 
 		self.item_property_label = QLabel("Svojstva")
-		self.info_group.layout().addWidget(self.item_property_label, 2, 4)
+		self.info_group.layout().addWidget(self.item_property_label, 3, 2)
 		self.item_property_edit = FoldableSectionsCheckboxesScrollList()
-		self.info_group.layout().addWidget(self.item_property_edit, 3, 4, 5, 1)
+		self.info_group.layout().addWidget(self.item_property_edit, 4, 2, 5, 1)
 
 		self.item_description_label = QLabel("Opis")
-		self.info_group.layout().addWidget(self.item_description_label, 6, 0, 1, 3)
+		self.info_group.layout().addWidget(self.item_description_label, 7, 0, 1, 3)
 		self.item_description_edit = QPlainTextEdit()
-		self.info_group.layout().addWidget(self.item_description_edit, 7, 0, 3, 3)
+		self.info_group.layout().addWidget(self.item_description_edit, 8, 0, 3, 2)
 
 
 		self.add_button = QPushButton("Dodaj")
@@ -1244,7 +1245,7 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.add_button.clicked.connect(self.add_button_clicked)
-		self.info_group.layout().addWidget(self.add_button, 9, 4)
+		self.info_group.layout().addWidget(self.add_button, 10, 2)
 
 		self.edit_button = QPushButton("Primijeni izmjene")
 		self.edit_button.setStyleSheet(
@@ -1260,7 +1261,7 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.edit_button.clicked.connect(self.edit_button_clicked)
-		self.info_group.layout().addWidget(self.edit_button, 9, 4)
+		self.info_group.layout().addWidget(self.edit_button, 10, 2)
 
 		self.remove_button = QPushButton("Izbriši")
 		self.remove_button.setStyleSheet(
@@ -1276,7 +1277,7 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.remove_button.clicked.connect(self.remove_button_clicked)
-		self.info_group.layout().addWidget(self.remove_button, 9, 4)
+		self.info_group.layout().addWidget(self.remove_button, 10, 2)
 
 
 
