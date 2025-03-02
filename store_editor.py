@@ -1174,7 +1174,7 @@ class ItemEditWidget(QWidget):
 		self.info_group.layout().setVerticalSpacing(0)
 		self.info_group.layout().setHorizontalSpacing(20)
 
-		self.item_image_label = QLabel("Slika")
+		self.item_image_label = QLabel("<b>Slika</b>")
 		self.info_group.layout().addWidget(self.item_image_label, 0, 0)
 		self.image_display = QLabel()
 		self.image_display.setStyleSheet(
@@ -1207,25 +1207,25 @@ class ItemEditWidget(QWidget):
 		self.info_group.layout().addWidget(empty_space, 6, 0)
 
 
-		self.item_name_label = QLabel("Naziv")
+		self.item_name_label = QLabel("<b>Naziv</b>")
 		self.info_group.layout().addWidget(self.item_name_label, 0, 1)
 		self.item_name_edit = QPlainTextEdit()
 		self.item_name_edit.setMaximumHeight(75)
 		self.item_name_edit.textChanged.connect(self.item_name_changed)
 		self.info_group.layout().addWidget(self.item_name_edit, 1, 1, 3, 1)
 
-		self.item_category_label = QLabel("Kategorija")
+		self.item_category_label = QLabel("<b>Kategorija</b>")
 		self.info_group.layout().addWidget(self.item_category_label, 0, 2)
 		self.item_category_edit = QComboBox()
 		self.item_category_edit.currentTextChanged.connect(self.item_category_changed)
 		self.info_group.layout().addWidget(self.item_category_edit, 1, 2)
 
-		self.item_property_label = QLabel("Svojstva")
+		self.item_property_label = QLabel("<b>Svojstva</b>")
 		self.info_group.layout().addWidget(self.item_property_label, 3, 2)
 		self.item_property_edit = FoldableSectionsCheckboxesScrollList()
 		self.info_group.layout().addWidget(self.item_property_edit, 4, 2, 5, 1)
 
-		self.item_description_label = QLabel("Opis")
+		self.item_description_label = QLabel("<b>Opis</b>")
 		self.info_group.layout().addWidget(self.item_description_label, 7, 0, 1, 3)
 		self.item_description_edit = QPlainTextEdit()
 		self.info_group.layout().addWidget(self.item_description_edit, 8, 0, 3, 2)
