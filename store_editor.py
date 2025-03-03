@@ -1213,6 +1213,10 @@ class ItemEditWidget(QWidget):
 		self.price_title = QLabel("<b>Cijena</b>")
 		self.price_group.layout().addWidget(self.price_title, 0, 0)
 		self.price_edit = QLineEdit()
+		self.price_edit.setAlignment(Qt.AlignRight)
+		self.price_validator = QDoubleValidator(0, 9999999, 2)
+		self.price_validator.setNotation(QDoubleValidator.StandardNotation)
+		self.price_edit.setValidator(self.price_validator)
 		self.price_group.layout().addWidget(self.price_edit, 1, 0)
 		self.price_currency_label = QLabel("€")
 		self.price_group.layout().addWidget(self.price_currency_label, 1, 1)
@@ -1236,18 +1240,21 @@ class ItemEditWidget(QWidget):
 		self.amount_title = QLabel("<b>Količina</b>")
 		self.amount_group.layout().addWidget(self.amount_title, 0, 0, 1, 5)
 		self.amount_m10_button = QPushButton("-10")
-		# self.amount_m10_button.clicked.connect()
+		self.amount_m10_button.clicked.connect(self.minus_10_clicked)
 		self.amount_group.layout().addWidget(self.amount_m10_button, 1, 0)
 		self.amount_m1_button = QPushButton("-1")
-		# self.amount_m1_button.clicked.connect()
+		self.amount_m1_button.clicked.connect(self.minus_1_clicked)
 		self.amount_group.layout().addWidget(self.amount_m1_button, 1, 1)
 		self.amount_edit = QLineEdit()
+		self.amount_edit.setAlignment(Qt.AlignHCenter)
 		self.amount_group.layout().addWidget(self.amount_edit, 1, 2)
+		self.amount_validator = QIntValidator(0, 99999999)
+		self.amount_edit.setValidator(self.amount_validator)
 		self.amount_p1_button = QPushButton("+1")
-		# self.amount_p1_button.clicked.connect()
+		self.amount_p1_button.clicked.connect(self.plus_1_clicked)
 		self.amount_group.layout().addWidget(self.amount_p1_button, 1, 3)
 		self.amount_p10_button = QPushButton("+10")
-		# self.amount_p10_button.clicked.connect()
+		self.amount_p10_button.clicked.connect(self.plus_10_clicked)
 		self.amount_group.layout().addWidget(self.amount_p10_button, 1, 4)
 		self.info_group.layout().addWidget(self.amount_group, 3, 1)
 
@@ -1506,6 +1513,8 @@ class ItemEditWidget(QWidget):
 			self.image_display.setPixmap(QPixmap())
 			self.chosen_image_filename = ""
 			self.name_edit.setPlainText("")
+			self.price_edit.setText("")
+			self.amount_edit.setText("0")
 			self.description_edit.setPlainText("")
 			self.category_edit.setCurrentIndex(-1)
 
@@ -1519,8 +1528,11 @@ class ItemEditWidget(QWidget):
 			else:
 				pixmap = QPixmap(f"resources/item_images/no_image.png")
 				self.chosen_image_filename = ""
+
 			self.image_display.setPixmap(pixmap)
 			self.name_edit.setPlainText(item["NAME"])
+			self.price_edit.setText(item["PRICE"])
+			self.amount_edit.setText(str(item["AMOUNT"]))
 			self.description_edit.setPlainText(item["DETAILS"])
 
 			category_name = database_interaction.get_category_name(item["CATEGORY_ID"])
@@ -1606,9 +1618,39 @@ class ItemEditWidget(QWidget):
 		self.image_display.setPixmap(pixmap)
 
 
+	def minus_10_clicked(self):
+		current_value = int(self.amount_edit.text())
+		if current_value > 10:
+			new_value = current_value - 10
+		else:
+			new_value = 0
+		self.amount_edit.setText(str(new_value))
+
+
+	def minus_1_clicked(self):
+		current_value = int(self.amount_edit.text())
+		if current_value > 1:
+			new_value = current_value - 1
+		else:
+			new_value = 0
+		self.amount_edit.setText(str(new_value))
+
+
+	def plus_1_clicked(self):
+		current_value = int(self.amount_edit.text())
+		self.amount_edit.setText(str(current_value + 1))
+
+
+	def plus_10_clicked(self):
+		current_value = int(self.amount_edit.text())
+		self.amount_edit.setText(str(current_value + 10))
+
+
 	def add_button_clicked(self):
 		item_id = database_interaction.add_item(
 			self.name_edit.toPlainText(),
+			self.price_edit.text().replace(".", ""),
+			int(self.amount_edit.text()),
 			self.category_edit.currentText(),
 			self.chosen_image_filename,
 			self.description_edit.toPlainText(),
@@ -1624,6 +1666,8 @@ class ItemEditWidget(QWidget):
 		database_interaction.edit_item(
 			self.selected_item_id,
 			self.name_edit.toPlainText(),
+			self.price_edit.text().replace(".", ""),
+			int(self.amount_edit.text()),
 			self.category_edit.currentText(),
 			self.chosen_image_filename,
 			self.description_edit.toPlainText(),

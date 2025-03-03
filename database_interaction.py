@@ -117,7 +117,7 @@ def initialize():
 
 		connection.execute("""
 			CREATE TABLE ITEMS
-			(ID INTEGER PRIMARY KEY, NAME VARCHAR, CATEGORY_ID INT, IMAGE VARCHAR, DETAILS VARCHAR);
+			(ID INTEGER PRIMARY KEY, NAME VARCHAR, PRICE VARCHAR, AMOUNT INT, CATEGORY_ID INT, IMAGE VARCHAR, DETAILS VARCHAR);
 		""")
 
 		connection.execute("""
@@ -128,6 +128,8 @@ def initialize():
 
 		add_item(
 			name="Nike WOW hlače",
+			price="29,99",
+			amount=10,
 			category_name="odjeća",
 			details="Ove hlače su uistinu WOW.",
 			descriptor_ids=[
@@ -139,6 +141,8 @@ def initialize():
 		)
 		add_item(
 			name="Adidas majica sa kapuljačom DELUXE",
+			price="24,99",
+			amount=9,
 			category_name="odjeća",
 			details="Ova bijela unisex majica ima kapuljaču. Baš je DELUXE",
 			descriptor_ids=[
@@ -150,12 +154,16 @@ def initialize():
 		)
 		add_item(
 			name="UMBRO kapa",
+			price="9,99",
+			amount=999,
 			category_name="odjeća",
 			details="Ova kapa se nosi na glavi.",
 		)
 
 		add_item(
 			name="Z bregov Trajno mlijeko 2,8% m.m. 1L",
+			price="1,02",
+			amount=50,
 			category_name="piće",
 			details="Sterilizirano, homogenizirano mlijeko s 2,8% mliječne masti.",
 			descriptor_ids=[
@@ -164,6 +172,8 @@ def initialize():
 		)
 		add_item(
 			name="Coca Cola 2 l",
+			price="2,29",
+			amount=40,
 			category_name="piće",
 			image="coca_cola.jpg",
 			details=(
@@ -533,6 +543,8 @@ def get_item_descriptors(item_id):
 
 def add_item(
 	name,
+	price,
+	amount,
 	category_name,
 	image = "",
 	details = "",
@@ -544,8 +556,8 @@ def add_item(
 		category_id = get_category_id(category_name)
 
 		result = connection.execute(f"""
-			INSERT INTO ITEMS (NAME, CATEGORY_ID, IMAGE, DETAILS)
-			VALUES ("{name}", {category_id}, "{image}", "{details}")
+			INSERT INTO ITEMS (NAME, PRICE, AMOUNT, CATEGORY_ID, IMAGE, DETAILS)
+			VALUES ("{name}", "{price}", {amount}, {category_id}, "{image}", "{details}")
 			RETURNING ID;
 		""")
 		item_id = result[0][0]
@@ -562,6 +574,8 @@ def add_item(
 def edit_item(
 	id,
 	name,
+	price,
+	amount,
 	category_name,
 	image = "",
 	details = "",
@@ -574,6 +588,8 @@ def edit_item(
 			UPDATE ITEMS
 			SET
 				NAME="{name}",
+				PRICE="{price}",
+				AMOUNT={amount},
 				CATEGORY_ID={category_id},
 				IMAGE="{image}",
 				DETAILS="{details}"
