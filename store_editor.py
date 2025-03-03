@@ -258,7 +258,7 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 class Window(QMainWindow):
 	def __init__(self):
 		super().__init__()
-		self.setMinimumSize(850, 450)
+		self.setMinimumSize(850, 500)
 		self.setWindowTitle("Uređivač proizvoda")
 		self.setWindowIcon(QIcon("resources/settings.png"))
 
@@ -1170,65 +1170,121 @@ class ItemEditWidget(QWidget):
 		self.info_group.layout().setColumnStretch(0, 1)
 		self.info_group.layout().setColumnStretch(1, 2)
 		self.info_group.layout().setColumnStretch(2, 2)
+		self.info_group.layout().setRowStretch(1, 2)
 		self.info_group.layout().setContentsMargins(11, 17, 11, 11)
-		self.info_group.layout().setVerticalSpacing(0)
-		self.info_group.layout().setHorizontalSpacing(20)
+		self.info_group.layout().setSpacing(20)
 
-		self.item_image_label = QLabel("<b>Slika</b>")
-		self.info_group.layout().addWidget(self.item_image_label, 0, 0)
+		# Widget koji sadrži skup "Slika" elemenata
+		self.image_group = QWidget()
+		self.image_group.setLayout(QGridLayout())
+		self.image_group.layout().setContentsMargins(0, 0, 0, 0)
+		self.image_group.layout().setRowStretch(100, 10)
+		self.image_title = QLabel("<b>Slika</b>")
+		self.image_group.layout().addWidget(self.image_title, 0, 0)
 		self.image_display = QLabel()
-		self.image_display.setStyleSheet(
-			"""
-			QLabel {
-				border: 1px solid black;
-			}
-			"""
-		)
+		self.image_display.setStyleSheet("border: 1px solid black;")
 		self.image_display.setFixedSize(100, 100)
 		self.image_display.setScaledContents(True)
 		pixmap = QPixmap("resources/item_images/no_image.png")
 		self.image_display.setPixmap(pixmap)
-		self.info_group.layout().addWidget(self.image_display, 1, 0, 4, 1)
+		self.image_group.layout().addWidget(self.image_display, 1, 0)
 		self.image_button = QPushButton("Učitaj sliku")
 		self.image_button.clicked.connect(self.load_image_clicked)
-		self.image_button.setStyleSheet(
+		self.image_button.setStyleSheet("font-size: 9pt; height: 18;")
+		self.image_group.layout().addWidget(self.image_button, 2, 0)
+		self.info_group.layout().addWidget(self.image_group, 0, 0, 4, 1)
+
+		# Widget koji sadrži skup "Naziv" elemenata
+		self.name_group = QWidget()
+		self.name_group.setLayout(QVBoxLayout())
+		self.name_group.layout().setContentsMargins(0, 0, 0, 0)
+		self.name_title = QLabel("<b>Naziv</b>")
+		self.name_group.layout().addWidget(self.name_title)
+		self.name_edit = QPlainTextEdit()
+		self.name_edit.setMinimumHeight(43)
+		self.name_edit.textChanged.connect(self.name_changed)
+		self.name_group.layout().addWidget(self.name_edit)
+		self.info_group.layout().addWidget(self.name_group, 0, 1, 2, 1)
+
+		# Widget koji sadrži skup "Cijena" elemenata
+		self.price_group = QWidget()
+		self.price_group.setLayout(QGridLayout())
+		self.price_group.layout().setContentsMargins(0, 0, 0, 0)
+		self.price_title = QLabel("<b>Cijena</b>")
+		self.price_group.layout().addWidget(self.price_title, 0, 0)
+		self.price_edit = QLineEdit()
+		self.price_group.layout().addWidget(self.price_edit, 1, 0)
+		self.price_currency_label = QLabel("€")
+		self.price_group.layout().addWidget(self.price_currency_label, 1, 1)
+		self.info_group.layout().addWidget(self.price_group, 2, 1)
+
+		# Widget koji sadrži skup "Količina" elemenata
+		self.amount_group = QWidget()
+		self.amount_group.setLayout(QGridLayout())
+		self.amount_group.layout().setContentsMargins(0, 0, 0, 0)
+		self.amount_group.layout().setSpacing(0)
+		self.amount_group.layout().setColumnStretch(2, 10)
+		self.amount_group.setStyleSheet(
 			"""
 			QPushButton {
-				font-size: 9pt;
-				height: 18;
+				padding: 0px 0px;
+				width: 32px;
+				height: 26px
 			}
 			"""
 		)
-		self.info_group.layout().addWidget(self.image_button, 5, 0)
+		self.amount_title = QLabel("<b>Količina</b>")
+		self.amount_group.layout().addWidget(self.amount_title, 0, 0, 1, 5)
+		self.amount_m10_button = QPushButton("-10")
+		# self.amount_m10_button.clicked.connect()
+		self.amount_group.layout().addWidget(self.amount_m10_button, 1, 0)
+		self.amount_m1_button = QPushButton("-1")
+		# self.amount_m1_button.clicked.connect()
+		self.amount_group.layout().addWidget(self.amount_m1_button, 1, 1)
+		self.amount_edit = QLineEdit()
+		self.amount_group.layout().addWidget(self.amount_edit, 1, 2)
+		self.amount_p1_button = QPushButton("+1")
+		# self.amount_p1_button.clicked.connect()
+		self.amount_group.layout().addWidget(self.amount_p1_button, 1, 3)
+		self.amount_p10_button = QPushButton("+10")
+		# self.amount_p10_button.clicked.connect()
+		self.amount_group.layout().addWidget(self.amount_p10_button, 1, 4)
+		self.info_group.layout().addWidget(self.amount_group, 3, 1)
 
+		# Widget koji sadrži skup "Kategorija" elemenata
+		self.category_group = QWidget()
+		self.category_group.setLayout(QVBoxLayout())
+		self.category_group.layout().setContentsMargins(0, 0, 0, 0)
+		self.category_title = QLabel("<b>Kategorija</b>")
+		self.category_group.layout().addWidget(self.category_title)
+		self.category_edit = QComboBox()
+		self.category_edit.currentTextChanged.connect(self.category_changed)
+		self.category_group.layout().addWidget(self.category_edit)
+		self.category_group.layout().addStretch()
+		self.info_group.layout().addWidget(self.category_group, 0, 2)
 
+		# Widget koji sadrži skup "Svojstva" elemenata
+		self.property_group = QWidget()
+		self.property_group.setLayout(QVBoxLayout())
+		self.property_group.layout().setContentsMargins(0, 0, 0, 0)
+		self.property_title = QLabel("<b>Svojstva</b>")
+		self.property_group.layout().addWidget(self.property_title)
+		self.property_edit = FoldableSectionsCheckboxesScrollList()
+		self.property_group.layout().addWidget(self.property_edit)
 		empty_space = QWidget()
-		empty_space.setFixedHeight(15)
-		self.info_group.layout().addWidget(empty_space, 6, 0)
+		empty_space.setMinimumHeight(18)
+		self.property_group.layout().addWidget(empty_space)
+		self.info_group.layout().addWidget(self.property_group, 1, 2, 4, 1)
 
-
-		self.item_name_label = QLabel("<b>Naziv</b>")
-		self.info_group.layout().addWidget(self.item_name_label, 0, 1)
-		self.item_name_edit = QPlainTextEdit()
-		self.item_name_edit.setMaximumHeight(75)
-		self.item_name_edit.textChanged.connect(self.item_name_changed)
-		self.info_group.layout().addWidget(self.item_name_edit, 1, 1, 3, 1)
-
-		self.item_category_label = QLabel("<b>Kategorija</b>")
-		self.info_group.layout().addWidget(self.item_category_label, 0, 2)
-		self.item_category_edit = QComboBox()
-		self.item_category_edit.currentTextChanged.connect(self.item_category_changed)
-		self.info_group.layout().addWidget(self.item_category_edit, 1, 2)
-
-		self.item_property_label = QLabel("<b>Svojstva</b>")
-		self.info_group.layout().addWidget(self.item_property_label, 3, 2)
-		self.item_property_edit = FoldableSectionsCheckboxesScrollList()
-		self.info_group.layout().addWidget(self.item_property_edit, 4, 2, 5, 1)
-
-		self.item_description_label = QLabel("<b>Opis</b>")
-		self.info_group.layout().addWidget(self.item_description_label, 7, 0, 1, 3)
-		self.item_description_edit = QPlainTextEdit()
-		self.info_group.layout().addWidget(self.item_description_edit, 8, 0, 3, 2)
+		# Widget koji sadrži skup "Opis" elemenata
+		self.description_group = QWidget()
+		self.description_group.setLayout(QVBoxLayout())
+		self.description_group.layout().setContentsMargins(0, 0, 0, 0)
+		self.description_title = QLabel("<b>Opis</b>")
+		self.description_group.layout().addWidget(self.description_title)
+		self.description_edit = QPlainTextEdit()
+		self.description_group.layout().addWidget(self.description_edit)
+		self.info_group.layout().addWidget(self.description_group, 4, 0, 2, 2)
 
 
 		self.add_button = QPushButton("Dodaj")
@@ -1245,7 +1301,7 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.add_button.clicked.connect(self.add_button_clicked)
-		self.info_group.layout().addWidget(self.add_button, 10, 2)
+		self.info_group.layout().addWidget(self.add_button, 5, 2)
 
 		self.edit_button = QPushButton("Primijeni izmjene")
 		self.edit_button.setStyleSheet(
@@ -1261,7 +1317,7 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.edit_button.clicked.connect(self.edit_button_clicked)
-		self.info_group.layout().addWidget(self.edit_button, 10, 2)
+		self.info_group.layout().addWidget(self.edit_button, 5, 2)
 
 		self.remove_button = QPushButton("Izbriši")
 		self.remove_button.setStyleSheet(
@@ -1277,7 +1333,7 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 		self.remove_button.clicked.connect(self.remove_button_clicked)
-		self.info_group.layout().addWidget(self.remove_button, 10, 2)
+		self.info_group.layout().addWidget(self.remove_button, 5, 2)
 
 
 
@@ -1315,36 +1371,33 @@ class ItemEditWidget(QWidget):
 
 
 	def set_info_interaction_state(self, state):
-		self.image_display.setDisabled(not state)
-		self.image_button.setDisabled(not state)
-		self.item_name_label.setDisabled(not state)
-		self.item_name_edit.setDisabled(not state)
-		self.item_description_label.setDisabled(not state)
-		self.item_description_edit.setDisabled(not state)
-		self.item_category_label.setDisabled(not state)
-		self.item_category_edit.setDisabled(not state)
-		self.item_property_label.setDisabled(not state)
-		self.item_property_edit.setDisabled(not state)
+		self.image_group.setDisabled(not state)
+		self.name_group.setDisabled(not state)
+		self.price_group.setDisabled(not state)
+		self.amount_group.setDisabled(not state)
+		self.category_group.setDisabled(not state)
+		self.property_group.setDisabled(not state)
+		self.description_group.setDisabled(not state)
 
 
 	def update_category_list(self):
 		# Izbrisi sve kategorije iz widgeta
-		while self.item_category_edit.count() > 0:
-			self.item_category_edit.removeItem(0)
+		while self.category_edit.count() > 0:
+			self.category_edit.removeItem(0)
 
 		# Dodaj iznova nabavljene kategorije u widget
 		for category in database_interaction.get_categories():
 			category_name = category["NAME"]
-			self.item_category_edit.addItem(category_name.capitalize())
+			self.category_edit.addItem(category_name.capitalize())
 
 		# Namjesti da nijedna kategorija nije izabrana
-		self.item_category_edit.setCurrentIndex(-1)
+		self.category_edit.setCurrentIndex(-1)
 
 
 	def update_property_list(self):
-		self.item_property_edit.clear()
+		self.property_edit.clear()
 
-		item_category_name = self.item_category_edit.currentText()
+		item_category_name = self.category_edit.currentText()
 		if not item_category_name:
 			return
 
@@ -1359,17 +1412,17 @@ class ItemEditWidget(QWidget):
 					{"ID": descriptor_id, "NAME": descriptor_name.capitalize()}
 				)
 
-			self.item_property_edit.add_section(property["NAME"], descriptors)
+			self.property_edit.add_section(property["NAME"], descriptors)
 
 
 	def update_selected_descriptors(self):
-		for checkbox in self.item_property_edit.checkboxes.values():
+		for checkbox in self.property_edit.checkboxes.values():
 			checkbox.setChecked(False)
 		if self.selected_item_id > -1:
 			selected_item_descriptor_ids = \
 				database_interaction.get_item_descriptors(self.selected_item_id)
 			for descriptor_id in selected_item_descriptor_ids:
-				self.item_property_edit.checkboxes[descriptor_id].setChecked(True)
+				self.property_edit.checkboxes[descriptor_id].setChecked(True)
 
 
 	def switch_to_item_add(self):
@@ -1452,9 +1505,9 @@ class ItemEditWidget(QWidget):
 		if item_id == "undefined":
 			self.image_display.setPixmap(QPixmap())
 			self.chosen_image_filename = ""
-			self.item_name_edit.setPlainText("")
-			self.item_description_edit.setPlainText("")
-			self.item_category_edit.setCurrentIndex(-1)
+			self.name_edit.setPlainText("")
+			self.description_edit.setPlainText("")
+			self.category_edit.setCurrentIndex(-1)
 
 		# Ako je definiran item_id, uzmi informacije iz baze podataka i popuni polja
 		else:
@@ -1467,11 +1520,11 @@ class ItemEditWidget(QWidget):
 				pixmap = QPixmap(f"resources/item_images/no_image.png")
 				self.chosen_image_filename = ""
 			self.image_display.setPixmap(pixmap)
-			self.item_name_edit.setPlainText(item["NAME"])
-			self.item_description_edit.setPlainText(item["DETAILS"])
+			self.name_edit.setPlainText(item["NAME"])
+			self.description_edit.setPlainText(item["DETAILS"])
 
 			category_name = database_interaction.get_category_name(item["CATEGORY_ID"])
-			self.item_category_edit.setCurrentText(category_name.capitalize())
+			self.category_edit.setCurrentText(category_name.capitalize())
 
 		self.update_selected_descriptors()
 
@@ -1502,9 +1555,9 @@ class ItemEditWidget(QWidget):
 				self.remove_button.setDisabled(True)
 
 
-	def item_name_changed(self):
-		item_name = self.item_name_edit.toPlainText()
-		item_category_name = self.item_category_edit.currentText()
+	def name_changed(self):
+		item_name = self.name_edit.toPlainText()
+		item_category_name = self.category_edit.currentText()
 
 		if item_name and item_category_name:
 			self.add_button.setDisabled(False)
@@ -1514,9 +1567,9 @@ class ItemEditWidget(QWidget):
 			self.edit_button.setDisabled(True)
 
 
-	def item_category_changed(self):
-		item_name = self.item_name_edit.toPlainText()
-		item_category_name = self.item_category_edit.currentText()
+	def category_changed(self):
+		item_name = self.name_edit.toPlainText()
+		item_category_name = self.category_edit.currentText()
 
 		if item_name and item_category_name:
 			self.add_button.setDisabled(False)
@@ -1527,11 +1580,9 @@ class ItemEditWidget(QWidget):
 
 		if item_category_name:
 			if self.selected_mode == "add" or self.selected_mode == "edit":
-				self.item_property_label.setDisabled(False)
-				self.item_property_edit.setDisabled(False)
+				self.property_group.setDisabled(False)
 		else:
-			self.item_property_label.setDisabled(True)
-			self.item_property_edit.setDisabled(True)
+			self.property_group.setDisabled(True)
 
 		self.update_property_list()
 
@@ -1557,14 +1608,14 @@ class ItemEditWidget(QWidget):
 
 	def add_button_clicked(self):
 		item_id = database_interaction.add_item(
-			self.item_name_edit.toPlainText(),
-			self.item_category_edit.currentText(),
+			self.name_edit.toPlainText(),
+			self.category_edit.currentText(),
 			self.chosen_image_filename,
-			self.item_description_edit.toPlainText(),
-			self.item_property_edit.get_checked_checkbox_ids()
+			self.description_edit.toPlainText(),
+			self.property_edit.get_checked_checkbox_ids()
 		)
 
-		button = self.list_widget.create_button(item_id, self.item_name_edit.toPlainText())
+		button = self.list_widget.create_button(item_id, self.name_edit.toPlainText())
 		button.clicked.connect(self.item_clicked)
 		self.set_item_info()
 
@@ -1572,14 +1623,14 @@ class ItemEditWidget(QWidget):
 	def edit_button_clicked(self):
 		database_interaction.edit_item(
 			self.selected_item_id,
-			self.item_name_edit.toPlainText(),
-			self.item_category_edit.currentText(),
+			self.name_edit.toPlainText(),
+			self.category_edit.currentText(),
 			self.chosen_image_filename,
-			self.item_description_edit.toPlainText(),
-			self.item_property_edit.get_checked_checkbox_ids()
+			self.description_edit.toPlainText(),
+			self.property_edit.get_checked_checkbox_ids()
 		)
 
-		self.list_widget.rename_button(self.selected_item_id, self.item_name_edit.toPlainText())
+		self.list_widget.rename_button(self.selected_item_id, self.name_edit.toPlainText())
 
 
 	def remove_button_clicked(self):
