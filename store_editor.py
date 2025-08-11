@@ -6,7 +6,7 @@ import os
 import database_interaction
 
 
-# Resetiranje baze podataka
+# # Resetiranje baze podataka
 # if os.path.exists("database.db"):
 # 	os.remove("database.db")
 
@@ -52,7 +52,8 @@ app.setStyleSheet(
 )
 
 
-
+# Scrollable widget koji sadrzi buttone koje je moguce izabrati
+# (u bilo kojem trenutku samo jedan button moze biti izabran)
 class RadioButtonScrollList(QScrollArea):
 	def __init__(self):
 		super().__init__()
@@ -83,7 +84,7 @@ class RadioButtonScrollList(QScrollArea):
 		self.buttons = {}
 
 
-	def button_clicked(self):
+	def _on_button_clicked(self):
 		clicked_button_id = self.sender().property("ID")
 		for button_id in self.buttons:
 			if button_id != clicked_button_id:
@@ -96,7 +97,7 @@ class RadioButtonScrollList(QScrollArea):
 		button = QPushButton(text.capitalize())
 		button.setCheckable(True)
 		button.setProperty("ID", id)
-		button.clicked.connect(self.button_clicked)
+		button.clicked.connect(self._on_button_clicked)
 		self.base_widget.layout().addWidget(button)
 
 		self.buttons[id] = button
@@ -127,6 +128,8 @@ class RadioButtonScrollList(QScrollArea):
 
 
 
+# Scrollable widget koji sadrzi sekcije checkboxeva,
+# sekcije je moguce foldati
 class FoldableSectionsCheckboxesScrollList(QScrollArea):
 	def __init__(self):
 		super().__init__()
@@ -170,13 +173,14 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 		self.checkboxes = {}
 
 
+	# Dodaj sekciju checkboxeva
 	def add_section(self, section_name, checkbox_infos):
 		section_button = QToolButton()
 		section_button.setArrowType(Qt.RightArrow)
 		section_button.setText(section_name)
 		section_button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
 		section_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-		section_button.clicked.connect(self.section_clicked)
+		section_button.clicked.connect(self._on_section_clicked)
 		self.base_widget.layout().addWidget(section_button)
 
 		checkboxes_widget = QWidget()
@@ -201,6 +205,7 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 		self.base_widget.layout().addWidget(checkboxes_widget)
 
 
+	# Isprazni widget
 	def clear(self):
 		while self.base_widget.layout().count() > 0:
 			widget = self.base_widget.layout().itemAt(0).widget()
@@ -211,7 +216,7 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 		self.checkboxes.clear()
 
 
-	def section_clicked(self):
+	def _on_section_clicked(self):
 		section_button = self.sender()
 		clicked_section_name = self.sender().text()
 
@@ -226,6 +231,7 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 			section_widget.hide()
 
 
+	# Ovo se automatski poziva pri togglanju "disabled" polja ove klase
 	def setDisabled(self, state):
 		# Ako disable, samo disableaj interakciju s checkboxevima (dozvoli scrollanje)
 		if state:
@@ -242,6 +248,7 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 				checkbox.setDisabled(False)
 
 
+	# Ugrabi sve id koji su checked
 	def get_checked_checkbox_ids(self):
 		checked_checkbox_ids = []
 
@@ -283,7 +290,8 @@ class Window(QMainWindow):
 		self.show()
 
 
-
+# Widget za odabir nacina rada (uredivanje svojstava/kategorija ili uredivanje proizvoda,
+# te njihovi podnacini rada)
 class ModeBar(QWidget):
 	def __init__(self, parent):
 		super().__init__(parent)
@@ -306,15 +314,32 @@ class ModeBar(QWidget):
 			}
 		""")
 
-		self.selected_primary_key = ""
-		self.selected_secondary_key = ""
+		self.selected_mode = ""
+		self.selected_submode = ""
 
-		self.secondary_widgets = {
+		# Buttoni za nacine rada
+		self.mode_buttons = {
+			"categories_properties": QPushButton("Kategorije/svojstva"),
+			"items": QPushButton("Proizvodi"),
+		}
+
+		# Buttoni za podnacine rada
+		self.submode_buttons = {
+			"category_edit": QPushButton("Uredi kategorije"),
+			"property_edit": QPushButton("Uredi grupe svojstava"),
+			"descriptor_edit": QPushButton("Uredi svojstva"),
+			"item_add": QPushButton("Dodaj proizvod"),
+			"item_edit": QPushButton("Uredi proizvod"),
+			"item_delete": QPushButton("Izbriši proizvod"),
+		}
+
+		# Widgeti koji sadrze buttone za podnacine rada
+		self.submode_buttons_containers = {
 			"categories_properties": QWidget(self),
 			"items": QWidget(self),
 		}
 
-		for widget in self.secondary_widgets.values():
+		for widget in self.submode_buttons_containers.values():
 			widget.setStyleSheet("""
 				QPushButton {
 					font-size: 13pt;
@@ -331,29 +356,16 @@ class ModeBar(QWidget):
 			""")
 
 
-		self.primary_buttons = {
-			"categories_properties": QPushButton("Kategorije/svojstva"),
-			"items": QPushButton("Proizvodi"),
-		}
+		# Inicializacija i povezivanje buttona sa "onclick" metodama
+		for mode in self.mode_buttons:
+			self.mode_buttons[mode].setCheckable(True)
+			self.mode_buttons[mode].setProperty("name", mode)
+			self.mode_buttons[mode].clicked.connect(self._on_mode_button_clicked)
 
-		self.secondary_buttons = {
-			"category_edit": QPushButton("Uredi kategorije"),
-			"property_edit": QPushButton("Uredi grupe svojstava"),
-			"descriptor_edit": QPushButton("Uredi svojstva"),
-			"item_add": QPushButton("Dodaj proizvod"),
-			"item_edit": QPushButton("Uredi proizvod"),
-			"item_delete": QPushButton("Izbriši proizvod"),
-		}
-
-		for primary_key in self.primary_buttons:
-			self.primary_buttons[primary_key].setCheckable(True)
-			self.primary_buttons[primary_key].setProperty("key", primary_key)
-			self.primary_buttons[primary_key].clicked.connect(self.primary_button_clicked)
-
-		for secondary_key in self.secondary_buttons:
-			self.secondary_buttons[secondary_key].setCheckable(True)
-			self.secondary_buttons[secondary_key].setProperty("key", secondary_key)
-			self.secondary_buttons[secondary_key].clicked.connect(self.secondary_button_clicked)
+		for submode in self.submode_buttons:
+			self.submode_buttons[submode].setCheckable(True)
+			self.submode_buttons[submode].setProperty("name", submode)
+			self.submode_buttons[submode].clicked.connect(self._on_submode_button_clicked)
 
 
 		self.linked_widgets = {
@@ -366,123 +378,123 @@ class ModeBar(QWidget):
 		self.setLayout(QGridLayout())
 		self.layout().setContentsMargins(0, 0, 0, 0)
 		self.layout().setSpacing(0)
-		self.layout().addWidget(self.primary_buttons["categories_properties"], 0, 0)
-		self.layout().addWidget(self.primary_buttons["items"], 0, 1)
-		self.layout().addWidget(self.secondary_widgets["categories_properties"], 1, 0, 1, 2)
-		self.layout().addWidget(self.secondary_widgets["items"], 1, 0, 1, 2)
+		self.layout().addWidget(self.mode_buttons["categories_properties"], 0, 0)
+		self.layout().addWidget(self.mode_buttons["items"], 0, 1)
+		self.layout().addWidget(self.submode_buttons_containers["categories_properties"], 1, 0, 1, 2)
+		self.layout().addWidget(self.submode_buttons_containers["items"], 1, 0, 1, 2)
 
-		self.secondary_widgets["categories_properties"].setLayout(QGridLayout())
-		self.secondary_widgets["categories_properties"].layout().setContentsMargins(0, 0, 0, 0)
-		self.secondary_widgets["categories_properties"].layout().setSpacing(0)
-		self.secondary_widgets["categories_properties"].layout().addWidget(
-			self.secondary_buttons["category_edit"], 0, 0
+		self.submode_buttons_containers["categories_properties"].setLayout(QGridLayout())
+		self.submode_buttons_containers["categories_properties"].layout().setContentsMargins(0, 0, 0, 0)
+		self.submode_buttons_containers["categories_properties"].layout().setSpacing(0)
+		self.submode_buttons_containers["categories_properties"].layout().addWidget(
+			self.submode_buttons["category_edit"], 0, 0
 		)
-		self.secondary_widgets["categories_properties"].layout().addWidget(
-			self.secondary_buttons["property_edit"], 0, 1
+		self.submode_buttons_containers["categories_properties"].layout().addWidget(
+			self.submode_buttons["property_edit"], 0, 1
 		)
-		self.secondary_widgets["categories_properties"].layout().addWidget(
-			self.secondary_buttons["descriptor_edit"], 0, 2
-		)
-
-		self.secondary_widgets["items"].setLayout(QGridLayout())
-		self.secondary_widgets["items"].layout().setContentsMargins(0, 0, 0, 0)
-		self.secondary_widgets["items"].layout().setSpacing(0)
-		self.secondary_widgets["items"].layout().addWidget(
-			self.secondary_buttons["item_add"], 0, 0
-		)
-		self.secondary_widgets["items"].layout().addWidget(
-			self.secondary_buttons["item_edit"], 0, 1
-		)
-		self.secondary_widgets["items"].layout().addWidget(
-			self.secondary_buttons["item_delete"], 0, 2
+		self.submode_buttons_containers["categories_properties"].layout().addWidget(
+			self.submode_buttons["descriptor_edit"], 0, 2
 		)
 
+		self.submode_buttons_containers["items"].setLayout(QGridLayout())
+		self.submode_buttons_containers["items"].layout().setContentsMargins(0, 0, 0, 0)
+		self.submode_buttons_containers["items"].layout().setSpacing(0)
+		self.submode_buttons_containers["items"].layout().addWidget(
+			self.submode_buttons["item_add"], 0, 0
+		)
+		self.submode_buttons_containers["items"].layout().addWidget(
+			self.submode_buttons["item_edit"], 0, 1
+		)
+		self.submode_buttons_containers["items"].layout().addWidget(
+			self.submode_buttons["item_delete"], 0, 2
+		)
 
-		self.secondary_widgets["categories_properties"].hide()
-		self.secondary_widgets["items"].hide()
+
+		self.submode_buttons_containers["categories_properties"].hide()
+		self.submode_buttons_containers["items"].hide()
 
 
-	def primary_button_clicked(self):
-		clicked_button_key = self.sender().property("key")
+	def _on_mode_button_clicked(self):
+		clicked_button_name = self.sender().property("name")
 
-		if self.selected_primary_key == "":
-			self.selected_primary_key = clicked_button_key
-			self.secondary_widgets[clicked_button_key].show()
+		if self.selected_mode == "":
+			self.selected_mode = clicked_button_name
+			self.submode_buttons_containers[clicked_button_name].show()
 
-		elif clicked_button_key != self.selected_primary_key:
-			self.secondary_widgets[self.selected_primary_key].hide()
-			self.primary_buttons[self.selected_primary_key].setChecked(False)
+		elif clicked_button_name != self.selected_mode:
+			self.submode_buttons_containers[self.selected_mode].hide()
+			self.mode_buttons[self.selected_mode].setChecked(False)
 
-			if self.selected_secondary_key:
-				match self.selected_primary_key:
+			if self.selected_submode:
+				match self.selected_mode:
 					case "categories_properties":
-						self.linked_widgets[self.selected_secondary_key].close()
+						self.linked_widgets[self.selected_submode].close()
 					case "items":
 						item_edit_widget.close()
 
-				self.secondary_buttons[self.selected_secondary_key].setChecked(False)
-				self.selected_secondary_key = ""
+				self.submode_buttons[self.selected_submode].setChecked(False)
+				self.selected_submode = ""
 
-			self.selected_primary_key = clicked_button_key
-			self.secondary_widgets[clicked_button_key].show()
+			self.selected_mode = clicked_button_name
+			self.submode_buttons_containers[clicked_button_name].show()
 
-		elif clicked_button_key == self.selected_primary_key:
-			self.secondary_widgets[self.selected_primary_key].hide()
-			self.primary_buttons[self.selected_primary_key].setChecked(False)
+		elif clicked_button_name == self.selected_mode:
+			self.submode_buttons_containers[self.selected_mode].hide()
+			self.mode_buttons[self.selected_mode].setChecked(False)
 
-			if self.selected_secondary_key:
-				match self.selected_primary_key:
+			if self.selected_submode:
+				match self.selected_mode:
 					case "categories_properties":
-						self.linked_widgets[self.selected_secondary_key].close()
+						self.linked_widgets[self.selected_submode].close()
 					case "items":
 						item_edit_widget.close()
 
-				self.secondary_buttons[self.selected_secondary_key].setChecked(False)
-				self.selected_secondary_key = ""
+				self.submode_buttons[self.selected_submode].setChecked(False)
+				self.selected_submode = ""
 
-			self.selected_primary_key = ""
+			self.selected_mode = ""
 
 
 
-	def secondary_button_clicked(self):
-		clicked_button_key = self.sender().property("key")
+	def _on_submode_button_clicked(self):
+		clicked_button_name = self.sender().property("name")
 
-		if self.selected_secondary_key == "":
-			match clicked_button_key:
+		if self.selected_submode == "":
+			match clicked_button_name:
 				case "category_edit" | "property_edit" | "descriptor_edit":
-					self.linked_widgets[clicked_button_key].open()
+					self.linked_widgets[clicked_button_name].open()
 				case "item_add":
 					item_edit_widget.switch_to_item_add()
 				case "item_edit":
 					item_edit_widget.switch_to_item_edit()
 				case "item_delete":
 					item_edit_widget.switch_to_item_remove()
-			self.selected_secondary_key = clicked_button_key
+			self.selected_submode = clicked_button_name
 			window.background_instruction.hide()
 
-		elif clicked_button_key != self.selected_secondary_key:
-			self.secondary_buttons[self.selected_secondary_key].setChecked(False)
-			match clicked_button_key:
+		elif clicked_button_name != self.selected_submode:
+			self.submode_buttons[self.selected_submode].setChecked(False)
+			match clicked_button_name:
 				case "category_edit" | "property_edit" | "descriptor_edit":
-					self.linked_widgets[self.selected_secondary_key].close()
-					self.linked_widgets[clicked_button_key].open()
+					self.linked_widgets[self.selected_submode].close()
+					self.linked_widgets[clicked_button_name].open()
 				case "item_add":
 					item_edit_widget.switch_to_item_add()
 				case "item_edit":
 					item_edit_widget.switch_to_item_edit()
 				case "item_delete":
 					item_edit_widget.switch_to_item_remove()
-			self.selected_secondary_key = clicked_button_key
+			self.selected_submode = clicked_button_name
 			window.background_instruction.hide()
 
-		elif clicked_button_key == self.selected_secondary_key:
-			self.secondary_buttons[self.selected_secondary_key].setChecked(False)
-			match clicked_button_key:
+		elif clicked_button_name == self.selected_submode:
+			self.submode_buttons[self.selected_submode].setChecked(False)
+			match clicked_button_name:
 				case "category_edit" | "property_edit" | "descriptor_edit":
-					self.linked_widgets[self.selected_secondary_key].close()
+					self.linked_widgets[self.selected_submode].close()
 				case "item_add" | "item_edit" | "item_delete":
 					item_edit_widget.close()
-			self.selected_secondary_key = ""
+			self.selected_submode = ""
 			window.background_instruction.show()
 
 
@@ -501,14 +513,26 @@ class CategoryEditWidget(QWidget):
 			"""
 		)
 
+		layout = QGridLayout(self)
+		layout.setRowStretch(0, 2)
+		layout.setRowStretch(1, 2)
+		layout.setRowStretch(2, 1)
+		layout.setColumnStretch(0, 1)
+		layout.setColumnStretch(1, 1)
+		self.setLayout(layout)
 
+
+		# Widget koji sadrzi skup elemenata koji prikazuju listu kategorija
 		self.list_group = QGroupBox("Kategorije")
 		self.list_group.setLayout(QVBoxLayout())
 
 		self.list_widget = RadioButtonScrollList()
 		self.list_group.layout().addWidget(self.list_widget)
 
+		layout.addWidget(self.list_group, 0, 0, 3, 1)
 
+
+		# Widget koji sadrzi skup elemenata za dodavanje kategorija
 		self.add_group = QGroupBox("Dodaj kategoriju")
 		self.add_group.setLayout(QVBoxLayout())
 
@@ -524,10 +548,13 @@ class CategoryEditWidget(QWidget):
 			}
 			"""
 		)
-		self.add_button.clicked.connect(self.add_button_clicked)
+		self.add_button.clicked.connect(self._on_add_button_clicked)
 		self.add_group.layout().addWidget(self.add_button)
 
+		layout.addWidget(self.add_group, 0, 1)
 
+
+		# Widget koji sadrzi skup elemenata za preimenovanje kategorija
 		self.rename_group = QGroupBox("Preimenuj kategoriju")
 		self.rename_group.setLayout(QVBoxLayout())
 
@@ -548,10 +575,13 @@ class CategoryEditWidget(QWidget):
 			}
 			"""
 		)
-		self.rename_button.clicked.connect(self.rename_button_clicked)
+		self.rename_button.clicked.connect(self._on_rename_button_clicked)
 		self.rename_group.layout().addWidget(self.rename_button)
 
+		layout.addWidget(self.rename_group, 1, 1)
 
+
+		# Widget koji sadrzi skup elemenata za brisanje kategorija
 		self.remove_group = QGroupBox("Izbriši kategoriju")
 		self.remove_group.setLayout(QVBoxLayout())
 
@@ -568,33 +598,23 @@ class CategoryEditWidget(QWidget):
 			}
 			"""
 		)
-		self.remove_button.clicked.connect(self.remove_button_clicked)
+		self.remove_button.clicked.connect(self._on_remove_button_clicked)
 		self.remove_group.layout().addWidget(self.remove_button)
 
-
-		layout = QGridLayout(self)
-		layout.setRowStretch(0, 2)
-		layout.setRowStretch(1, 2)
-		layout.setRowStretch(2, 1)
-		layout.setColumnStretch(0, 1)
-		layout.setColumnStretch(1, 1)
-		layout.addWidget(self.list_group, 0, 0, 3, 1)
-		layout.addWidget(self.add_group, 0, 1)
-		layout.addWidget(self.rename_group, 1, 1)
 		layout.addWidget(self.remove_group, 2, 1)
-		self.setLayout(layout)
+
 
 		self.selected_category = -1
-
 		self.close()
 
 
 	def open(self):
 		self.show()
 
+		# Popuni listu kategorija sa kategorijama iz baze podataka
 		for category in database_interaction.get_categories():
 			button = self.list_widget.create_button(category["ID"], category["NAME"])
-			button.clicked.connect(self.category_clicked)
+			button.clicked.connect(self._on_category_clicked)
 
 
 	def close(self):
@@ -606,7 +626,7 @@ class CategoryEditWidget(QWidget):
 		self.selected_category = -1
 
 
-	def category_clicked(self):
+	def _on_category_clicked(self):
 		category_id = self.sender().property("ID")
 
 		if self.selected_category == -1 or self.selected_category != category_id:
@@ -619,7 +639,7 @@ class CategoryEditWidget(QWidget):
 			self.remove_group.setDisabled(True)
 
 
-	def add_button_clicked(self):
+	def _on_add_button_clicked(self):
 		new_category_name = self.add_text.text()
 
 		if new_category_name == "":
@@ -633,10 +653,10 @@ class CategoryEditWidget(QWidget):
 		self.add_text.setText("")
 
 		button = self.list_widget.create_button(new_category_id, new_category_name)
-		button.clicked.connect(self.category_clicked)
+		button.clicked.connect(self._on_category_clicked)
 
 
-	def rename_button_clicked(self):
+	def _on_rename_button_clicked(self):
 		category_id = self.selected_category
 		category_name = database_interaction.get_category_name(category_id).lower()
 		new_category_name = self.rename_text.text()
@@ -655,11 +675,11 @@ class CategoryEditWidget(QWidget):
 		self.list_widget.rename_button(category_id, new_category_name)
 
 
-	def remove_button_clicked(self):
+	def _on_remove_button_clicked(self):
 		category_id = self.selected_category
 		category_name = database_interaction.get_category_name(category_id).lower()
 
-		# Odbaci pokušaj brisanja kategorije proizvoda "Ostalo"
+		# Odbaci pokusaj brisanja kategorije proizvoda "Ostalo"
 		if category_name == "ostalo":
 			return
 
@@ -685,21 +705,37 @@ class PropertyEditWidget(QWidget):
 			"""
 		)
 
+		layout = QGridLayout(self)
+		layout.setRowStretch(0, 2)
+		layout.setRowStretch(1, 2)
+		layout.setRowStretch(2, 1)
+		layout.setColumnStretch(0, 1)
+		layout.setColumnStretch(1, 1)
+		layout.setColumnStretch(2, 1)
+		self.setLayout(layout)
 
+
+		# Widget koji sadrzi skup elemenata koji prikazuju listu kategorija
 		self.category_list_group = QGroupBox("Kategorije")
 		self.category_list_group.setLayout(QVBoxLayout())
 
 		self.category_list_widget = RadioButtonScrollList()
 		self.category_list_group.layout().addWidget(self.category_list_widget)
 
+		layout.addWidget(self.category_list_group, 0, 0, 3, 1)
 
+
+		# Widget koji sadrzi skup elemenata koji prikazuju listu grupa svojstava
 		self.property_list_group = QGroupBox("Grupe svojstava")
 		self.property_list_group.setLayout(QVBoxLayout())
 
 		self.property_list_widget = RadioButtonScrollList()
 		self.property_list_group.layout().addWidget(self.property_list_widget)
 
+		layout.addWidget(self.property_list_group, 0, 1, 3, 1)
 
+
+		# Widget koji sadrzi skup elemenata za dodavanje grupa svojstava
 		self.add_group = QGroupBox("Dodaj grupu svojstava")
 		self.add_group.setLayout(QVBoxLayout())
 
@@ -720,10 +756,13 @@ class PropertyEditWidget(QWidget):
 			}
 			"""
 		)
-		self.add_button.clicked.connect(self.add_button_clicked)
+		self.add_button.clicked.connect(self._on_add_button_clicked)
 		self.add_group.layout().addWidget(self.add_button)
 
+		layout.addWidget(self.add_group, 0, 2)
 
+
+		# Widget koji sadrzi skup elemenata za preimenovanje grupa svojstava
 		self.rename_group = QGroupBox("Preimenuj grupu svojstava")
 		self.rename_group.setLayout(QVBoxLayout())
 
@@ -744,10 +783,13 @@ class PropertyEditWidget(QWidget):
 			}
 			"""
 		)
-		self.rename_button.clicked.connect(self.rename_button_clicked)
+		self.rename_button.clicked.connect(self._on_rename_button_clicked)
 		self.rename_group.layout().addWidget(self.rename_button)
 
+		layout.addWidget(self.rename_group, 1, 2)
 
+
+		# Widget koji sadrzi skup elemenata za brisanje grupa svojstava
 		self.remove_group = QGroupBox("Izbriši grupu svojstava")
 		self.remove_group.setLayout(QVBoxLayout())
 
@@ -764,36 +806,24 @@ class PropertyEditWidget(QWidget):
 			}
 			"""
 		)
-		self.remove_button.clicked.connect(self.remove_button_clicked)
+		self.remove_button.clicked.connect(self._on_remove_button_clicked)
 		self.remove_group.layout().addWidget(self.remove_button)
 
-
-		layout = QGridLayout(self)
-		layout.setRowStretch(0, 2)
-		layout.setRowStretch(1, 2)
-		layout.setRowStretch(2, 1)
-		layout.setColumnStretch(0, 1)
-		layout.setColumnStretch(1, 1)
-		layout.setColumnStretch(2, 1)
-		layout.addWidget(self.category_list_group, 0, 0, 3, 1)
-		layout.addWidget(self.property_list_group, 0, 1, 3, 1)
-		layout.addWidget(self.add_group, 0, 2)
-		layout.addWidget(self.rename_group, 1, 2)
 		layout.addWidget(self.remove_group, 2, 2)
-		self.setLayout(layout)
+
 
 		self.selected_category = -1
 		self.selected_property = -1
-
 		self.close()
 
 
 	def open(self):
 		self.show()
 
+		# Popuni listu kategorija sa kategorijama iz baze podataka
 		for category in database_interaction.get_categories():
 			button = self.category_list_widget.create_button(category["ID"], category["NAME"])
-			button.clicked.connect(self.category_clicked)
+			button.clicked.connect(self._on_category_clicked)
 
 
 	def close(self):
@@ -808,13 +838,13 @@ class PropertyEditWidget(QWidget):
 		self.selected_property = -1
 
 
-	def category_clicked(self):
-		category_id = self.sender().property("ID")
+	def _on_category_clicked(self):
+		clicked_category = self.sender().property("ID")
 
-		if self.selected_category == -1 or self.selected_category != category_id:
-			self.selected_category = category_id
+		if self.selected_category == -1 or self.selected_category != clicked_category:
+			self.selected_category = clicked_category
 			self.add_group.setDisabled(False)
-		elif self.selected_category == category_id:
+		elif self.selected_category == clicked_category:
 			self.selected_category = -1
 			self.selected_property = -1
 			self.add_group.setDisabled(True)
@@ -827,25 +857,26 @@ class PropertyEditWidget(QWidget):
 		if self.selected_category == -1:
 			return
 
+		# Popuni listu grupa svojstava sa grupama svojstava iz baze podataka
 		for property in database_interaction.get_properties(self.selected_category):
 			button = self.property_list_widget.create_button(property["ID"], property["NAME"])
-			button.clicked.connect(self.property_clicked)
+			button.clicked.connect(self._on_property_clicked)
 
 
-	def property_clicked(self):
-		property_id = self.sender().property("ID")
+	def _on_property_clicked(self):
+		clicked_property = self.sender().property("ID")
 
-		if self.selected_property == -1 or self.selected_property != property_id:
-			self.selected_property = property_id
+		if self.selected_property == -1 or self.selected_property != clicked_property:
+			self.selected_property = clicked_property
 			self.rename_group.setDisabled(False)
 			self.remove_group.setDisabled(False)
-		elif self.selected_property == property_id:
+		elif self.selected_property == clicked_property:
 			self.selected_property = -1
 			self.rename_group.setDisabled(True)
 			self.remove_group.setDisabled(True)
 
 
-	def add_button_clicked(self):
+	def _on_add_button_clicked(self):
 		new_property_name = self.add_text.text()
 
 		if new_property_name == "":
@@ -862,10 +893,10 @@ class PropertyEditWidget(QWidget):
 		self.add_text.setText("")
 
 		button = self.property_list_widget.create_button(property_id, new_property_name)
-		button.clicked.connect(self.property_clicked)
+		button.clicked.connect(self._on_property_clicked)
 
 
-	def rename_button_clicked(self):
+	def _on_rename_button_clicked(self):
 		property_id = self.selected_property
 		new_property_name = self.rename_text.text()
 
@@ -879,7 +910,7 @@ class PropertyEditWidget(QWidget):
 		self.property_list_widget.rename_button(property_id, new_property_name)
 
 
-	def remove_button_clicked(self):
+	def _on_remove_button_clicked(self):
 		property_id = self.selected_property
 
 		database_interaction.remove_property(property_id)
@@ -904,28 +935,48 @@ class DescriptorEditWidget(QWidget):
 			"""
 		)
 
+		layout = QGridLayout(self)
+		layout.setRowStretch(0, 2)
+		layout.setRowStretch(1, 2)
+		layout.setRowStretch(2, 1)
+		layout.setColumnStretch(0, 2)
+		layout.setColumnStretch(1, 2)
+		layout.setColumnStretch(2, 2)
+		layout.setColumnStretch(3, 3)
+		self.setLayout(layout)
 
+
+		# Widget koji sadrzi skup elemenata koji prikazuju listu kategorija
 		self.category_list_group = QGroupBox("Kategorije")
 		self.category_list_group.setLayout(QVBoxLayout())
 
 		self.category_list_widget = RadioButtonScrollList()
 		self.category_list_group.layout().addWidget(self.category_list_widget)
 
+		layout.addWidget(self.category_list_group, 0, 0, 3, 1)
 
+
+		# Widget koji sadrzi skup elemenata koji prikazuju listu grupa svojstava
 		self.property_list_group = QGroupBox("Grupe svojstava")
 		self.property_list_group.setLayout(QVBoxLayout())
 
 		self.property_list_widget = RadioButtonScrollList()
 		self.property_list_group.layout().addWidget(self.property_list_widget)
 
+		layout.addWidget(self.property_list_group, 0, 1, 3, 1)
 
+
+		# Widget koji sadrzi skup elemenata koji prikazuju listu svojstava
 		self.descriptor_list_group = QGroupBox("Svojstva")
 		self.descriptor_list_group.setLayout(QVBoxLayout())
 
 		self.descriptor_list_widget = RadioButtonScrollList()
 		self.descriptor_list_group.layout().addWidget(self.descriptor_list_widget)
 
+		layout.addWidget(self.descriptor_list_group, 0, 2, 3, 1)
 
+
+		# Widget koji sadrzi skup elemenata za dodavanje svojstava
 		self.add_group = QGroupBox("Dodaj svojstvo")
 		self.add_group.setLayout(QVBoxLayout())
 
@@ -946,10 +997,13 @@ class DescriptorEditWidget(QWidget):
 			}
 			"""
 		)
-		self.add_button.clicked.connect(self.add_button_clicked)
+		self.add_button.clicked.connect(self._on_add_button_clicked)
 		self.add_group.layout().addWidget(self.add_button)
 
+		layout.addWidget(self.add_group, 0, 3)
 
+
+		# Widget koji sadrzi skup elemenata za preimenovanje svojstava
 		self.rename_group = QGroupBox("Preimenuj svojstvo")
 		self.rename_group.setLayout(QVBoxLayout())
 
@@ -970,10 +1024,13 @@ class DescriptorEditWidget(QWidget):
 			}
 			"""
 		)
-		self.rename_button.clicked.connect(self.rename_button_clicked)
+		self.rename_button.clicked.connect(self._on_rename_button_clicked)
 		self.rename_group.layout().addWidget(self.rename_button)
 
+		layout.addWidget(self.rename_group, 1, 3)
 
+
+		# Widget koji sadrzi skup elemenata za brisanje svojstava
 		self.remove_group = QGroupBox("Izbriši svojstvo")
 		self.remove_group.setLayout(QVBoxLayout())
 
@@ -990,39 +1047,25 @@ class DescriptorEditWidget(QWidget):
 			}
 			"""
 		)
-		self.remove_button.clicked.connect(self.remove_button_clicked)
+		self.remove_button.clicked.connect(self._on_remove_button_clicked)
 		self.remove_group.layout().addWidget(self.remove_button)
 
-
-		layout = QGridLayout(self)
-		layout.setRowStretch(0, 2)
-		layout.setRowStretch(1, 2)
-		layout.setRowStretch(2, 1)
-		layout.setColumnStretch(0, 2)
-		layout.setColumnStretch(1, 2)
-		layout.setColumnStretch(2, 2)
-		layout.setColumnStretch(3, 3)
-		layout.addWidget(self.category_list_group, 0, 0, 3, 1)
-		layout.addWidget(self.property_list_group, 0, 1, 3, 1)
-		layout.addWidget(self.descriptor_list_group, 0, 2, 3, 1)
-		layout.addWidget(self.add_group, 0, 3)
-		layout.addWidget(self.rename_group, 1, 3)
 		layout.addWidget(self.remove_group, 2, 3)
-		self.setLayout(layout)
+
 
 		self.selected_category = -1
 		self.selected_property = -1
 		self.selected_descriptor = -1
-
 		self.close()
 
 
 	def open(self):
 		self.show()
 
+		# Popuni listu kategorija sa kategorijama iz baze podataka
 		for category in database_interaction.get_categories():
 			button = self.category_list_widget.create_button(category["ID"], category["NAME"])
-			button.clicked.connect(self.category_clicked)
+			button.clicked.connect(self._on_category_clicked)
 
 
 	def close(self):
@@ -1039,12 +1082,12 @@ class DescriptorEditWidget(QWidget):
 		self.selected_descriptor = -1
 
 
-	def category_clicked(self):
-		category_id = self.sender().property("ID")
+	def _on_category_clicked(self):
+		clicked_category = self.sender().property("ID")
 
-		if self.selected_category == -1 or self.selected_category != category_id:
-			self.selected_category = category_id
-		elif self.selected_category == category_id:
+		if self.selected_category == -1 or self.selected_category != clicked_category:
+			self.selected_category = clicked_category
+		elif self.selected_category == clicked_category:
 			self.selected_category = -1
 			self.selected_property = -1
 			self.selected_descriptor = -1
@@ -1059,18 +1102,19 @@ class DescriptorEditWidget(QWidget):
 		if self.selected_category == -1:
 			return
 
+		# Popuni listu grupa svojstava sa grupama svojstava iz baze podataka
 		for property in database_interaction.get_properties(self.selected_category):
 			button = self.property_list_widget.create_button(property["ID"], property["NAME"])
-			button.clicked.connect(self.property_clicked)
+			button.clicked.connect(self._on_property_clicked)
 
 
-	def property_clicked(self):
-		property_id = self.sender().property("ID")
+	def _on_property_clicked(self):
+		clicked_property = self.sender().property("ID")
 
-		if self.selected_property == -1 or self.selected_property != property_id:
-			self.selected_property = property_id
+		if self.selected_property == -1 or self.selected_property != clicked_property:
+			self.selected_property = clicked_property
 			self.add_group.setDisabled(False)
-		elif self.selected_property == property_id:
+		elif self.selected_property == clicked_property:
 			self.selected_property = -1
 			self.add_group.setDisabled(True)
 
@@ -1082,25 +1126,26 @@ class DescriptorEditWidget(QWidget):
 		if self.selected_property == -1:
 			return
 
-		for descriptor in database_interaction.get_descriptors(property_id):
+		# Popuni listu svojstava sa svojstvima iz baze podataka
+		for descriptor in database_interaction.get_descriptors(clicked_property):
 			button = self.descriptor_list_widget.create_button(descriptor["ID"],descriptor["NAME"])
-			button.clicked.connect(self.descriptor_clicked)
+			button.clicked.connect(self._on_descriptor_clicked)
 
 
-	def descriptor_clicked(self):
-		descriptor_id = self.sender().property("ID")
+	def _on_descriptor_clicked(self):
+		clicked_descriptor = self.sender().property("ID")
 
-		if self.selected_descriptor == -1 or self.selected_descriptor != descriptor_id:
-			self.selected_descriptor = descriptor_id
+		if self.selected_descriptor == -1 or self.selected_descriptor != clicked_descriptor:
+			self.selected_descriptor = clicked_descriptor
 			self.rename_group.setDisabled(False)
 			self.remove_group.setDisabled(False)
-		elif self.selected_descriptor == descriptor_id:
+		elif self.selected_descriptor == clicked_descriptor:
 			self.selected_descriptor = -1
 			self.rename_group.setDisabled(True)
 			self.remove_group.setDisabled(True)
 
 
-	def add_button_clicked(self):
+	def _on_add_button_clicked(self):
 		new_descriptor_name = self.add_text.text()
 
 		if new_descriptor_name == "":
@@ -1120,10 +1165,10 @@ class DescriptorEditWidget(QWidget):
 		self.add_text.setText("")
 
 		button = self.descriptor_list_widget.create_button(descriptor_id, new_descriptor_name)
-		button.clicked.connect(self.descriptor_clicked)
+		button.clicked.connect(self._on_descriptor_clicked)
 
 
-	def rename_button_clicked(self):
+	def _on_rename_button_clicked(self):
 		new_descriptor_name = self.rename_text.text()
 
 		if database_interaction.descriptor_exists(self.selected_property, new_descriptor_name):
@@ -1136,7 +1181,7 @@ class DescriptorEditWidget(QWidget):
 		self.descriptor_list_widget.rename_button(self.selected_descriptor, new_descriptor_name)
 
 
-	def remove_button_clicked(self):
+	def _on_remove_button_clicked(self):
 		database_interaction.remove_descriptor(self.selected_descriptor)
 		self.descriptor_list_widget.delete_button(self.selected_descriptor)
 
@@ -1158,13 +1203,23 @@ class ItemEditWidget(QWidget):
 			"""
 		)
 
+		layout = QGridLayout()
+		layout.setColumnStretch(0, 1)
+		layout.setColumnStretch(1, 4)
+		self.setLayout(layout)
+
+
+		# Widget koji sadrzi skup elemenata koji prikazuju listu proizvoda
 		self.list_group = QGroupBox("Proizvodi")
 		self.list_group.setLayout(QVBoxLayout())
 
 		self.list_widget = RadioButtonScrollList()
 		self.list_group.layout().addWidget(self.list_widget)
 
+		layout.addWidget(self.list_group, 0, 0)
 
+
+		# Widget koji sadrzi skup elemenata za izmjenu i prikaz informacija o izabranom proizvodu
 		self.info_group = QGroupBox("Informacije o proizvodu")
 		self.info_group.setLayout(QGridLayout())
 		self.info_group.layout().setColumnStretch(0, 1)
@@ -1174,13 +1229,18 @@ class ItemEditWidget(QWidget):
 		self.info_group.layout().setContentsMargins(11, 17, 11, 11)
 		self.info_group.layout().setSpacing(20)
 
-		# Widget koji sadrži skup "Slika" elemenata
+		layout.addWidget(self.info_group, 0, 1)
+
+
+		# Widget koji sadrzi skup elemenata za izmjenu i prikaz slike proizvoda
 		self.image_group = QWidget()
 		self.image_group.setLayout(QGridLayout())
 		self.image_group.layout().setContentsMargins(0, 0, 0, 0)
 		self.image_group.layout().setRowStretch(100, 10)
+
 		self.image_title = QLabel("<b>Slika</b>")
 		self.image_group.layout().addWidget(self.image_title, 0, 0)
+
 		self.image_display = QLabel()
 		self.image_display.setStyleSheet("border: 1px solid black;")
 		self.image_display.setFixedSize(100, 100)
@@ -1188,41 +1248,52 @@ class ItemEditWidget(QWidget):
 		pixmap = QPixmap("resources/item_images/no_image.png")
 		self.image_display.setPixmap(pixmap)
 		self.image_group.layout().addWidget(self.image_display, 1, 0)
+
 		self.image_button = QPushButton("Učitaj sliku")
-		self.image_button.clicked.connect(self.load_image_clicked)
+		self.image_button.clicked.connect(self._on_load_image_clicked)
 		self.image_button.setStyleSheet("font-size: 9pt; height: 18;")
 		self.image_group.layout().addWidget(self.image_button, 2, 0)
+
 		self.info_group.layout().addWidget(self.image_group, 0, 0, 4, 1)
 
-		# Widget koji sadrži skup "Naziv" elemenata
+
+		# Widget koji sadrzi skup elemenata za izmjenu i prikaz naziva proizvoda
 		self.name_group = QWidget()
 		self.name_group.setLayout(QVBoxLayout())
 		self.name_group.layout().setContentsMargins(0, 0, 0, 0)
+
 		self.name_title = QLabel("<b>Naziv</b>")
 		self.name_group.layout().addWidget(self.name_title)
+
 		self.name_edit = QPlainTextEdit()
 		self.name_edit.setMinimumHeight(43)
-		self.name_edit.textChanged.connect(self.name_changed)
+		self.name_edit.textChanged.connect(self._on_name_changed)
 		self.name_group.layout().addWidget(self.name_edit)
+
 		self.info_group.layout().addWidget(self.name_group, 0, 1, 2, 1)
 
-		# Widget koji sadrži skup "Cijena" elemenata
+
+		# Widget koji sadrzi skup elemenata za izmjenu i prikaz cijene proizvoda
 		self.price_group = QWidget()
 		self.price_group.setLayout(QGridLayout())
 		self.price_group.layout().setContentsMargins(0, 0, 0, 0)
+
 		self.price_title = QLabel("<b>Cijena</b>")
 		self.price_group.layout().addWidget(self.price_title, 0, 0)
+
 		self.price_edit = QLineEdit()
 		self.price_edit.setAlignment(Qt.AlignRight)
 		self.price_validator = QDoubleValidator(0, 9999999, 2)
 		self.price_validator.setNotation(QDoubleValidator.StandardNotation)
 		self.price_edit.setValidator(self.price_validator)
 		self.price_group.layout().addWidget(self.price_edit, 1, 0)
+
 		self.price_currency_label = QLabel("€")
 		self.price_group.layout().addWidget(self.price_currency_label, 1, 1)
 		self.info_group.layout().addWidget(self.price_group, 2, 1)
 
-		# Widget koji sadrži skup "Količina" elemenata
+
+		# Widget koji sadrzi skup elemenata za izmjenu i prikaz kolicine proizvoda
 		self.amount_group = QWidget()
 		self.amount_group.setLayout(QGridLayout())
 		self.amount_group.layout().setContentsMargins(0, 0, 0, 0)
@@ -1237,63 +1308,84 @@ class ItemEditWidget(QWidget):
 			}
 			"""
 		)
+
 		self.amount_title = QLabel("<b>Količina</b>")
 		self.amount_group.layout().addWidget(self.amount_title, 0, 0, 1, 5)
-		self.amount_m10_button = QPushButton("-10")
-		self.amount_m10_button.clicked.connect(self.minus_10_clicked)
-		self.amount_group.layout().addWidget(self.amount_m10_button, 1, 0)
-		self.amount_m1_button = QPushButton("-1")
-		self.amount_m1_button.clicked.connect(self.minus_1_clicked)
-		self.amount_group.layout().addWidget(self.amount_m1_button, 1, 1)
+
+		self.amount_minus10_button = QPushButton("-10")
+		self.amount_minus10_button.clicked.connect(self._on_minus_10_clicked)
+		self.amount_group.layout().addWidget(self.amount_minus10_button, 1, 0)
+
+		self.amount_minus1_button = QPushButton("-1")
+		self.amount_minus1_button.clicked.connect(self._on_minus_1_clicked)
+		self.amount_group.layout().addWidget(self.amount_minus1_button, 1, 1)
+
 		self.amount_edit = QLineEdit()
 		self.amount_edit.setAlignment(Qt.AlignHCenter)
 		self.amount_group.layout().addWidget(self.amount_edit, 1, 2)
 		self.amount_validator = QIntValidator(0, 99999999)
 		self.amount_edit.setValidator(self.amount_validator)
-		self.amount_p1_button = QPushButton("+1")
-		self.amount_p1_button.clicked.connect(self.plus_1_clicked)
-		self.amount_group.layout().addWidget(self.amount_p1_button, 1, 3)
-		self.amount_p10_button = QPushButton("+10")
-		self.amount_p10_button.clicked.connect(self.plus_10_clicked)
-		self.amount_group.layout().addWidget(self.amount_p10_button, 1, 4)
+
+		self.amount_plus1_button = QPushButton("+1")
+		self.amount_plus1_button.clicked.connect(self._on_plus_1_clicked)
+		self.amount_group.layout().addWidget(self.amount_plus1_button, 1, 3)
+
+		self.amount_plus10_button = QPushButton("+10")
+		self.amount_plus10_button.clicked.connect(self._on_plus_10_clicked)
+		self.amount_group.layout().addWidget(self.amount_plus10_button, 1, 4)
+
 		self.info_group.layout().addWidget(self.amount_group, 3, 1)
 
-		# Widget koji sadrži skup "Kategorija" elemenata
+
+		# Widget koji sadrzi skup elemenata za izmjenu i prikaz kategorije proizvoda
 		self.category_group = QWidget()
 		self.category_group.setLayout(QVBoxLayout())
 		self.category_group.layout().setContentsMargins(0, 0, 0, 0)
+
 		self.category_title = QLabel("<b>Kategorija</b>")
 		self.category_group.layout().addWidget(self.category_title)
+
 		self.category_edit = QComboBox()
-		self.category_edit.currentTextChanged.connect(self.category_changed)
+		self.category_edit.currentTextChanged.connect(self._on_category_changed)
 		self.category_group.layout().addWidget(self.category_edit)
+
 		self.category_group.layout().addStretch()
 		self.info_group.layout().addWidget(self.category_group, 0, 2)
 
-		# Widget koji sadrži skup "Svojstva" elemenata
+
+		# Widget koji sadrzi skup elemenata za izmjenu i prikaz svojstava proizvoda
 		self.property_group = QWidget()
 		self.property_group.setLayout(QVBoxLayout())
 		self.property_group.layout().setContentsMargins(0, 0, 0, 0)
+
 		self.property_title = QLabel("<b>Svojstva</b>")
 		self.property_group.layout().addWidget(self.property_title)
+
 		self.property_edit = FoldableSectionsCheckboxesScrollList()
 		self.property_group.layout().addWidget(self.property_edit)
+
 		empty_space = QWidget()
 		empty_space.setMinimumHeight(18)
+
 		self.property_group.layout().addWidget(empty_space)
 		self.info_group.layout().addWidget(self.property_group, 1, 2, 4, 1)
 
-		# Widget koji sadrži skup "Opis" elemenata
+
+		# Widget koji sadrzi skup elemenata za izmjenu i prikaz opisa proizvoda
 		self.description_group = QWidget()
 		self.description_group.setLayout(QVBoxLayout())
 		self.description_group.layout().setContentsMargins(0, 0, 0, 0)
+
 		self.description_title = QLabel("<b>Opis</b>")
 		self.description_group.layout().addWidget(self.description_title)
+
 		self.description_edit = QPlainTextEdit()
 		self.description_group.layout().addWidget(self.description_edit)
+
 		self.info_group.layout().addWidget(self.description_group, 4, 0, 2, 2)
 
 
+		# Button za dodavanje proizvoda u bazu podataka
 		self.add_button = QPushButton("Dodaj")
 		self.add_button.setStyleSheet(
 			"""
@@ -1307,9 +1399,11 @@ class ItemEditWidget(QWidget):
 			}
 			"""
 		)
-		self.add_button.clicked.connect(self.add_button_clicked)
+		self.add_button.clicked.connect(self._on_add_button_clicked)
 		self.info_group.layout().addWidget(self.add_button, 5, 2)
 
+
+		# Button za primjenu unesenih detalja o proizvodu
 		self.edit_button = QPushButton("Primijeni izmjene")
 		self.edit_button.setStyleSheet(
 			"""
@@ -1323,9 +1417,11 @@ class ItemEditWidget(QWidget):
 			}
 			"""
 		)
-		self.edit_button.clicked.connect(self.edit_button_clicked)
+		self.edit_button.clicked.connect(self._on_edit_button_clicked)
 		self.info_group.layout().addWidget(self.edit_button, 5, 2)
 
+
+		# Button za brisanje proizvoda iz baze podataka
 		self.remove_button = QPushButton("Izbriši")
 		self.remove_button.setStyleSheet(
 			"""
@@ -1339,32 +1435,24 @@ class ItemEditWidget(QWidget):
 			}
 			"""
 		)
-		self.remove_button.clicked.connect(self.remove_button_clicked)
+		self.remove_button.clicked.connect(self._on_remove_button_clicked)
 		self.info_group.layout().addWidget(self.remove_button, 5, 2)
 
-
-
-		layout = QGridLayout()
-		layout.setColumnStretch(0, 1)
-		layout.setColumnStretch(1, 4)
-		layout.addWidget(self.list_group, 0, 0)
-		layout.addWidget(self.info_group, 0, 1)
-		self.setLayout(layout)
-
-		self.reset_item_list()
-		self.close()
 
 		self.chosen_image_filename = ""
 		self.selected_item_id = -1
 		self.selected_mode = ""
+		self.reset_item_list()
+		self.close()
 
 
 	def reset_item_list(self):
 		self.list_widget.delete_all_buttons()
 
+		# Popuni listu proizvoda sa proizvodima iz baze podataka
 		for item in database_interaction.get_items():
 			button = self.list_widget.create_button(item["ID"], item["NAME"])
-			button.clicked.connect(self.item_clicked)
+			button.clicked.connect(self._on_item_clicked)
 
 
 	def open(self):
@@ -1377,6 +1465,7 @@ class ItemEditWidget(QWidget):
 		self.hide()
 
 
+	# Toggle za interakciju s elementima koji prikazuju detalje o proizvodu
 	def set_info_interaction_state(self, state):
 		self.image_group.setDisabled(not state)
 		self.name_group.setDisabled(not state)
@@ -1397,17 +1486,18 @@ class ItemEditWidget(QWidget):
 			category_name = category["NAME"]
 			self.category_edit.addItem(category_name.capitalize())
 
-		# Namjesti da nijedna kategorija nije izabrana
 		self.category_edit.setCurrentIndex(-1)
 
 
 	def update_property_list(self):
+		# Izbrisi sva svojstva iz widgeta
 		self.property_edit.clear()
 
 		item_category_name = self.category_edit.currentText()
 		if not item_category_name:
 			return
 
+		# Dodaj iznova svojstva i grupe svojstava iz baze podataka
 		item_category_id = database_interaction.get_category_id(item_category_name)
 		for property in database_interaction.get_properties(item_category_id):
 			descriptors = []
@@ -1432,6 +1522,7 @@ class ItemEditWidget(QWidget):
 				self.property_edit.checkboxes[descriptor_id].setChecked(True)
 
 
+	# Predi u submode dodavanja proizvoda
 	def switch_to_item_add(self):
 		self.open()
 		self.info_group.setTitle("Dodaj proizvod")
@@ -1445,17 +1536,16 @@ class ItemEditWidget(QWidget):
 		self.list_widget.unselect_all_buttons()
 		self.selected_item_id = -1
 
-		# Sakrij listu s proizvodima
 		self.list_group.hide()
 		self.layout().setColumnStretch(0, 0)
 
-		# Izbrisi sve info proizvoda iz input elemenata
+		# Izbrisi sav info proizvoda iz elemenata
 		self.set_item_info()
 
-		# Omoguci interakciju s info elementima
 		self.set_info_interaction_state(True)
 
 
+	# Predi u submode izmjene detalja proizvoda
 	def switch_to_item_edit(self):
 		self.open()
 		self.info_group.setTitle("Izmijeni detalje proizvoda")
@@ -1469,17 +1559,16 @@ class ItemEditWidget(QWidget):
 		self.list_widget.unselect_all_buttons()
 		self.selected_item_id = -1
 
-		# Prikazi listu s proizvodima
 		self.list_group.show()
 		self.layout().setColumnStretch(0, 2)
 
 		# Izbrisi sve info proizvoda iz input elemenata
 		self.set_item_info()
 
-		# Onemoguci interakciju s info elementima
 		self.set_info_interaction_state(False)
 
 
+	# Predi u submode brisanja proizvoda
 	def switch_to_item_remove(self):
 		self.open()
 		self.info_group.setTitle("Izbriši proizvod")
@@ -1496,14 +1585,12 @@ class ItemEditWidget(QWidget):
 		# Disableaj remove button jer nijedan proizvod nije izabran
 		self.remove_button.setDisabled(True)
 
-		# Prikazi listu s proizvodima
 		self.list_group.show()
 		self.layout().setColumnStretch(0, 2)
 
 		# Izbrisi sve info proizvoda iz input elemenata
 		self.set_item_info()
 
-		# Onemoguci interakciju s info elementima
 		self.set_info_interaction_state(False)
 
 
@@ -1518,7 +1605,7 @@ class ItemEditWidget(QWidget):
 			self.description_edit.setPlainText("")
 			self.category_edit.setCurrentIndex(-1)
 
-		# Ako je definiran item_id, uzmi informacije iz baze podataka i popuni polja
+		# Ako je definiran item_id, popuni info polja s informacijama iz baze podataka
 		else:
 			item = database_interaction.get_item(item_id)
 
@@ -1541,7 +1628,7 @@ class ItemEditWidget(QWidget):
 		self.update_selected_descriptors()
 
 
-	def item_clicked(self):
+	def _on_item_clicked(self):
 		clicked_item_id = self.sender().property("ID")
 
 		# Ako vec nije bio izabran proizvod ili je drugaciji od kliknutog,
@@ -1567,7 +1654,7 @@ class ItemEditWidget(QWidget):
 				self.remove_button.setDisabled(True)
 
 
-	def name_changed(self):
+	def _on_name_changed(self):
 		item_name = self.name_edit.toPlainText()
 		item_category_name = self.category_edit.currentText()
 
@@ -1579,7 +1666,7 @@ class ItemEditWidget(QWidget):
 			self.edit_button.setDisabled(True)
 
 
-	def category_changed(self):
+	def _on_category_changed(self):
 		item_name = self.name_edit.toPlainText()
 		item_category_name = self.category_edit.currentText()
 
@@ -1599,7 +1686,7 @@ class ItemEditWidget(QWidget):
 		self.update_property_list()
 
 
-	def load_image_clicked(self):
+	def _on_load_image_clicked(self):
 		image_file_absolute_path = QFileDialog.getOpenFileName(
 			self,
 			caption = "Choose image from this directory",
@@ -1618,7 +1705,7 @@ class ItemEditWidget(QWidget):
 		self.image_display.setPixmap(pixmap)
 
 
-	def minus_10_clicked(self):
+	def _on_minus_10_clicked(self):
 		current_value = int(self.amount_edit.text())
 		if current_value > 10:
 			new_value = current_value - 10
@@ -1627,7 +1714,7 @@ class ItemEditWidget(QWidget):
 		self.amount_edit.setText(str(new_value))
 
 
-	def minus_1_clicked(self):
+	def _on_minus_1_clicked(self):
 		current_value = int(self.amount_edit.text())
 		if current_value > 1:
 			new_value = current_value - 1
@@ -1636,17 +1723,17 @@ class ItemEditWidget(QWidget):
 		self.amount_edit.setText(str(new_value))
 
 
-	def plus_1_clicked(self):
+	def _on_plus_1_clicked(self):
 		current_value = int(self.amount_edit.text())
 		self.amount_edit.setText(str(current_value + 1))
 
 
-	def plus_10_clicked(self):
+	def _on_plus_10_clicked(self):
 		current_value = int(self.amount_edit.text())
 		self.amount_edit.setText(str(current_value + 10))
 
 
-	def add_button_clicked(self):
+	def _on_add_button_clicked(self):
 		item_id = database_interaction.add_item(
 			self.name_edit.toPlainText(),
 			self.price_edit.text().replace(".", ""),
@@ -1658,11 +1745,11 @@ class ItemEditWidget(QWidget):
 		)
 
 		button = self.list_widget.create_button(item_id, self.name_edit.toPlainText())
-		button.clicked.connect(self.item_clicked)
+		button.clicked.connect(self._on_item_clicked)
 		self.set_item_info()
 
 
-	def edit_button_clicked(self):
+	def _on_edit_button_clicked(self):
 		database_interaction.edit_item(
 			self.selected_item_id,
 			self.name_edit.toPlainText(),
@@ -1677,15 +1764,17 @@ class ItemEditWidget(QWidget):
 		self.list_widget.rename_button(self.selected_item_id, self.name_edit.toPlainText())
 
 
-	def remove_button_clicked(self):
+	def _on_remove_button_clicked(self):
 		database_interaction.remove_item(self.selected_item_id)
 
 		self.set_item_info()
 		self.list_widget.delete_button(self.selected_item_id)
 
+		self.remove_button.enabled = False
 
 
 
+# Instanciranje klasa
 window = Window()
 category_edit_widget = CategoryEditWidget(window)
 property_edit_widget = PropertyEditWidget(window)
@@ -1693,6 +1782,8 @@ descriptor_edit_widget = DescriptorEditWidget(window)
 item_edit_widget = ItemEditWidget(window)
 mode_bar = ModeBar(window)
 
+
+# Smjestanje widgeta u window
 window.base_widget.layout().addWidget(mode_bar, 0, 0)
 window.base_widget.layout().addWidget(category_edit_widget, 1, 0)
 window.base_widget.layout().addWidget(property_edit_widget, 1, 0)
