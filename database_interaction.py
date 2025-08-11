@@ -313,7 +313,7 @@ def rename_category(category_id, new_category_name):
 
 def remove_category(category_id):
 	with connection:
-		# Izbrisi sve grupe svojstava i sva specifina svojstva kategorije koja se brise
+		# Izbrisi sve grupe svojstava i sva specificna svojstva kategorije koja se brise
 		for property in get_properties(category_id):
 			for descriptor in get_descriptors(property["ID"]):
 				remove_descriptor(descriptor["ID"])

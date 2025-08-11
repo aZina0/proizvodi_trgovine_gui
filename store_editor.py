@@ -231,7 +231,6 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 			section_widget.hide()
 
 
-	# Ovo se automatski poziva pri togglanju "disabled" polja ove klase
 	def setDisabled(self, state):
 		# Ako disable, samo disableaj interakciju s checkboxevima (dozvoli scrollanje)
 		if state:
@@ -240,7 +239,7 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 			for checkbox in self.checkboxes.values():
 				checkbox.setDisabled(True)
 
-		# Inače ako enable, omogući sve
+		# Inace ako enable, omoguci sve
 		else:
 			self.disabled = False
 			super().setDisabled(False)
@@ -1770,7 +1769,7 @@ class ItemEditWidget(QWidget):
 		self.set_item_info()
 		self.list_widget.delete_button(self.selected_item_id)
 
-		self.remove_button.enabled = False
+		self.remove_button.setDisabled(True)
 
 
 
