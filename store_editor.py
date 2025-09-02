@@ -22,13 +22,7 @@ app.setStyleSheet(
 	"""
 	QGroupBox {
 		font: bold;
-		border: 1px solid #353535;
-		border-radius: 6px;
 		margin-top: 6px;
-	}
-
-	QGroupBox::disabled {
-		border: 1px solid #262626;
 	}
 
 	QGroupBox::title {
@@ -37,18 +31,11 @@ app.setStyleSheet(
 		padding: 0px 5px 0px 5px;
 	}
 
-	QGroupBox::title::disabled {
-		color: #494949;
-	}
-
 	QLineEdit {
 		font-size: 11pt;
 	}
-
-	QLineEdit::disabled {
-		color: #494949;
-	}
 	"""
+
 )
 
 
@@ -60,16 +47,10 @@ class RadioButtonScrollList(QScrollArea):
 
 		self.setStyleSheet("""
 			QPushButton {
-				background-color: #292929;
-				border: 1px solid #393939;
 				padding: 0px 10px;
 				font-size: 10pt;
 				text-align: left;
 				margin-left: 0;
-			}
-
-			QPushButton::checked {
-				background-color: #393939;
 			}
 		""")
 
@@ -135,20 +116,15 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 		super().__init__()
 
 		self.setStyleSheet("""
-			QScrollArea {
-				border: 1px solid black;
-			}
-
 			QToolButton {
-				background-color: #292929;
-				border: 1px solid #393939;
 				font-size: 10pt;
 				text-align: left;
 			}
 
 			QCheckBox::indicator {
 				margin-left: 20px;
-				border: 1px solid gray;
+				border: 1px solid #9B9B9B;
+				border-radius: 1px;
 			}
 
 			QCheckBox::indicator:unchecked {
@@ -281,7 +257,6 @@ class Window(QMainWindow):
 			QLabel {
 				font: bold;
 				font-size: 30pt;
-				color: #3C3C3C;
 			}
 		""")
 		self.base_widget.layout().addWidget(self.background_instruction, 1, 0)
@@ -296,19 +271,14 @@ class ModeBar(QWidget):
 		super().__init__(parent)
 
 		self.setStyleSheet("""
-			QWidget {
-				background-color: #141414;
-			}
 			QPushButton {
 				font-size: 13pt;
 				height: 30;
-				background-color: #000000;
-				border: 1px solid #878787;
+				border: 1px solid;
 				padding: 0px 10px;
 			}
 
 			QPushButton::checked {
-				background-color: #141414;
 				border-bottom: 0px;
 			}
 		""")
@@ -343,13 +313,11 @@ class ModeBar(QWidget):
 				QPushButton {
 					font-size: 13pt;
 					height: 30;
-					background-color: #141414;
-					border: 1px solid #878787;
+					border: 1px solid;
 					margin: 10px 0 0 0;
 				}
 
 				QPushButton::checked {
-					background-color: #1E1E1E;
 					border-bottom: 0px;
 				}
 			""")
@@ -544,6 +512,7 @@ class CategoryEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #008900;
+				color: #FFFFFF;
 			}
 			"""
 		)
@@ -566,6 +535,7 @@ class CategoryEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #666666;
+				color: #FFFFFF;
 			}
 
 			QPushButton::disabled {
@@ -589,6 +559,7 @@ class CategoryEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #890000;
+				color: #FFFFFF;
 			}
 
 			QPushButton::disabled {
@@ -747,6 +718,7 @@ class PropertyEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #008900;
+				color: #FFFFFF;
 			}
 
 			QPushButton::disabled {
@@ -774,6 +746,7 @@ class PropertyEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #666666;
+				color: #FFFFFF;
 			}
 
 			QPushButton::disabled {
@@ -797,6 +770,7 @@ class PropertyEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #890000;
+				color: #FFFFFF;
 			}
 
 			QPushButton::disabled {
@@ -988,6 +962,7 @@ class DescriptorEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #008900;
+				color: #FFFFFF;
 			}
 
 			QPushButton::disabled {
@@ -1015,6 +990,7 @@ class DescriptorEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #666666;
+				color: #FFFFFF;
 			}
 
 			QPushButton::disabled {
@@ -1038,6 +1014,7 @@ class DescriptorEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #890000;
+				color: #FFFFFF;
 			}
 
 			QPushButton::disabled {
@@ -1390,6 +1367,7 @@ class ItemEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #008900;
+				color: #FFFFFF;
 			}
 
 			QPushButton::disabled {
@@ -1408,6 +1386,7 @@ class ItemEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #666666;
+				color: #FFFFFF;
 			}
 
 			QPushButton::disabled {
@@ -1426,6 +1405,7 @@ class ItemEditWidget(QWidget):
 			"""
 			QPushButton {
 				background-color: #890000;
+				color: #FFFFFF;
 			}
 
 			QPushButton::disabled {
