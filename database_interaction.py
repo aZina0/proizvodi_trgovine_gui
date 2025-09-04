@@ -131,6 +131,7 @@ def initialize():
 			price="29,99",
 			amount=10,
 			category_name="odjeća",
+			image="nike_hlace_crvene.png",
 			details="Ove hlače su uistinu WOW.",
 			descriptor_ids=[
 				odjeca_boja_crna_id,
@@ -144,6 +145,7 @@ def initialize():
 			price="24,99",
 			amount=9,
 			category_name="odjeća",
+			image="adidas_majica_kapuljaca.jpg",
 			details="Ova bijela unisex majica ima kapuljaču. Baš je DELUXE",
 			descriptor_ids=[
 				odjeca_boja_bijela_id,
@@ -157,7 +159,37 @@ def initialize():
 			price="9,99",
 			amount=999,
 			category_name="odjeća",
+			image="umbro_kapa.jpg",
 			details="Ova kapa se nosi na glavi.",
+			descriptor_ids=[
+				odjeca_boja_crna_id,
+				odjeca_spol_muski_id,
+				odjeca_spol_zenski_id,
+			]
+		)
+		add_item(
+			name="The North Face Antora",
+			price="72,79",
+			amount=13,
+			category_name="odjeća",
+			image="north_face_jakna.png",
+			details="Ženska kišna jakna North Face Antora učinit će vas suhima i zaštićenima u svim vremenskim uvjetima. ",
+			descriptor_ids=[
+				odjeca_boja_bijela_id,
+				odjeca_spol_zenski_id,
+			]
+		)
+		add_item(
+			name="Champion LADY NEON CUFFED PANTS",
+			price="19,84",
+			amount=14,
+			category_name="odjeća",
+			image="champion_hlace.jpg",
+			details="Champion NEON ženski lifestyle donji dio trenirke je odličan izbor za opuštene, neformalne prilike nakon napornog dana.",
+			descriptor_ids=[
+				odjeca_spol_zenski_id,
+				odjeca_materijal_poliester_id,
+			]
 		)
 
 		add_item(
@@ -165,9 +197,21 @@ def initialize():
 			price="1,02",
 			amount=50,
 			category_name="piće",
+			image="zbregov_trajno_mlijeko_1l.jpg",
 			details="Sterilizirano, homogenizirano mlijeko s 2,8% mliječne masti.",
 			descriptor_ids=[
 				pice_ambalaza_tetrapak_id,
+			]
+		)
+		add_item(
+			name="Jana Prirodna mineralna voda 1,5 l",
+			price="0,95",
+			amount=12,
+			category_name="piće",
+			image="jana_voda.jpg",
+			details="Negazirana. Izvor: Sveta Jana.",
+			descriptor_ids=[
+				pice_ambalaza_boca_id,
 			]
 		)
 		add_item(
@@ -190,6 +234,97 @@ def initialize():
 				pice_vrsta_gazirano_id,
 				pice_ambalaza_boca_id,
 			]
+		)
+		add_item(
+			name="Ožujsko Svijetlo pivo 0,5 l",
+			price="1,19",
+			amount=2,
+			category_name="piće",
+			image="ozujsko_pivo.jpg",
+			details="Najomiljenije hrvatsko pivo. Preko 120 godina hrvatske tradicije i kvalitete. Proizvedeno s ponosom.",
+			descriptor_ids=[
+				pice_vrsta_alkoholno_id,
+				pice_ambalaza_boca_id,
+			]
+		)
+		add_item(
+			name="Heineken Svijetlo pivo 0,4 l",
+			price="1,25",
+			amount=21,
+			category_name="piće",
+			image="heineken_pivo.jpg",
+			details="Pasterizirano. 100% prirodni sastojci.",
+			descriptor_ids=[
+				pice_vrsta_alkoholno_id,
+				pice_ambalaza_boca_id,
+			]
+		)
+		add_item(
+			name="Kutjevo Graševina Kvalitetno vino 1 l",
+			price="7,15",
+			amount=5,
+			category_name="piće",
+			image="vino.jpg",
+			details="Kutjevo i kutjevačka vina simbol su hrvatske vinske kulture još od 1232. godine.",
+			descriptor_ids=[
+				pice_vrsta_alkoholno_id,
+				pice_ambalaza_boca_id,
+			]
+		)
+		add_item(
+			name="Cockta original 1,5 l",
+			price="1,85",
+			amount=15,
+			category_name="piće",
+			image="cockta.jpg",
+			details="Prirodni CO2. Bez kofeina.",
+			descriptor_ids=[
+				pice_vrsta_gazirano_id,
+				pice_ambalaza_boca_id,
+			]
+		)
+		add_item(
+			name="Juicy Sok 100% jabuka 1 l",
+			price="2,09",
+			amount=17,
+			category_name="piće",
+			image="juicy.jpg",
+			details="Najbolje iz voća. Dobro za nas. Dobro za prirodu. Bogat vitaminom C.",
+			descriptor_ids=[
+				pice_ambalaza_tetrapak_id,
+			]
+		)
+		add_item(
+			name="Vindi Multi A+C+E 2 l",
+			price="2,49",
+			amount=3,
+			category_name="piće",
+			image="vindi.jpg",
+			details="Osvježavajuće negazirano bezalkoholno piće sa sokom od više vrsta voća od koncentriranih sokova, sa šećerom i sladilom, obogaćeno vitaminima.",
+			descriptor_ids=[
+				pice_ambalaza_tetrapak_id,
+			]
+		)
+		add_item(
+			name="Juicy Fruits multivitamin 1,5 l",
+			price="1,49",
+			amount=20,
+			category_name="piće",
+			image="juicy_fruits.jpg",
+			details="Pasterizirano. Izvor 10 vitamina. Udio voćnog soka: 8%.",
+			descriptor_ids=[
+				pice_ambalaza_boca_id,
+			]
+		)
+
+		add_item(
+			name="Keyroad Električno šiljilo",
+			price="11,89",
+			amount=13,
+			category_name="ostalo",
+			image="siljilo.jpg",
+			details="Electric. Potrebne 2xAA baterije.",
+			descriptor_ids=[]
 		)
 
 
