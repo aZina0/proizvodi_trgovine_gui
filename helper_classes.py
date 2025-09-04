@@ -1,10 +1,13 @@
 from PySide6.QtWidgets import *
 from PySide6.QtGui import *
+from PySide6.QtCore import *
 
 
 # Scrollable widget koji sadrzi sekcije checkboxeva,
 # sekcije je moguce foldati
 class FoldableSectionsCheckboxesScrollList(QScrollArea):
+	checkboxes_changed = Signal()
+
 	def __init__(self):
 		super().__init__()
 
@@ -66,6 +69,7 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 
 			checkbox = QCheckBox(checkbox_name)
 			checkbox.setProperty("ID", checkbox_id)
+			checkbox.checkStateChanged.connect(self.checkbox_changed)
 			if self.disabled:
 				checkbox.setDisabled(True)
 			self.checkboxes[checkbox_id] = checkbox
@@ -98,6 +102,10 @@ class FoldableSectionsCheckboxesScrollList(QScrollArea):
 		else:
 			section_button.setArrowType(Qt.RightArrow)
 			section_widget.hide()
+
+
+	def checkbox_changed(self):
+		self.checkboxes_changed.emit()
 
 
 	def setDisabled(self, state):
