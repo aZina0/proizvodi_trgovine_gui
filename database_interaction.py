@@ -622,3 +622,35 @@ def remove_item(item_id):
 			FROM ITEM_DESCRIPTORS
 			WHERE ITEM_ID={item_id};
 		""")
+
+def get_items_from_category_with_descriptors(category_id, descriptor_ids):
+    items = []
+    descriptors_string = ",".join(str(id) for id in descriptor_ids)
+
+    with connection:
+        if len(descriptor_ids) == 0:
+            result, col_names = connection.execute_and_return_col_names(f"""
+                SELECT *
+                FROM ITEMS
+                WHERE CATEGORY_ID={category_id};
+            """)
+
+        else:
+            result, col_names = connection.execute_and_return_col_names(f"""
+                SELECT *
+                FROM ITEMS AS item
+                WHERE item.CATEGORY_ID={category_id}
+                AND item.ID IN (
+                    SELECT item2.ITEM_ID
+                    FROM ITEM_DESCRIPTORS as item2
+                    WHERE item2.DESCRIPTOR_ID IN ({descriptors_string})
+                );
+            """)
+
+        for row in result:
+            item = {}
+            for column_name, cell in zip(col_names, row):
+                item[column_name] = cell
+            items.append(item)
+
+    return items
